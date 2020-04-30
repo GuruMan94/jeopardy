@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script>
+        const ws = new SockJS("/questions");
+        const stompClient = Stomp.over(ws);
+        stompClient.connect({}, function (frame) {
+            console.log("Connected ...");
+
+            stompClient.subscribe("/topic/questions", function (message) {
+                console.log("Question: ", message);
+            });
+
+            stompClient.subscribe("/user/topic/personal/questions", function (message) {
+                console.log("Personal question: ", message);
+            });
+
+            stompClient.subscribe("/user/error", function (message) {
+                console.log("Error: ", message);
+            });
+
+        }, function (error) {
+            console.log("Error:", error);
+        });
+
+        function sendMessage() {
+            stompClient.send("/app/questions", {}, "tsotne traki")
+        }
+
+        function sendPrivateMessage() {
+            stompClient.send("/app/personal/questions", {}, "tsotne")
+        }
+
+        function addUser() {
+            stompClient.send("/app/game.addUser", {}, "tsotne")
+        }
+    </script>
+</head>
+<body>
+<button onclick="sendMessage()">Send message</button>
+<button onclick="sendPrivateMessage()">Send private message</button>
+<button onclick="addUser()">Add User</button>
+</body>
+</html>
