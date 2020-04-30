@@ -28,15 +28,15 @@
         });
 
         function sendMessage() {
-            stompClient.send("/app/questions", {}, "tsotne traki")
+            stompClient.send("/app/questions", {}, "some message")
         }
 
         function sendPrivateMessage() {
-            stompClient.send("/app/personal/questions", {}, "tsotne")
+            stompClient.send("/app/personal/questions", {}, "some private message")
         }
 
         function addUser() {
-            stompClient.send("/app/game.addUser", {}, "tsotne")
+            stompClient.send("/app/game.addUser", {}, "add user")
         }
     </script>
 </head>
