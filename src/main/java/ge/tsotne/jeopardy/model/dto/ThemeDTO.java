@@ -11,8 +11,8 @@ import javax.validation.constraints.Size;
 import java.util.List;
 
 @Data
-public class QuestionPackDTO {
-    @NotNull(groups = ValidationWithId.class)
+public class ThemeDTO {
+    @NotNull(groups = {ValidationWithId.class})
     private Long id;
 
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
@@ -20,14 +20,14 @@ public class QuestionPackDTO {
 
     private String description;
 
-    private String author;
+    private Integer priority;
 
     @Min(value = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private Integer themeCount;
+    private Integer questionCount;
 
     @Valid
-    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
     @Size(min = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private List<ThemeDTO> themes;
+    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
+    private List<QuestionDTO> questions;
 }

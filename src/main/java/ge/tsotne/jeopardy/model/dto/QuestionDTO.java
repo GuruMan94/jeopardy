@@ -4,30 +4,27 @@ import ge.tsotne.jeopardy.model.validation.ValidationWithId;
 import ge.tsotne.jeopardy.model.validation.ValidationWithoutId;
 import lombok.Data;
 
-import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.util.List;
+import java.math.BigDecimal;
 
 @Data
-public class QuestionPackDTO {
-    @NotNull(groups = ValidationWithId.class)
+public class QuestionDTO {
+    @NotNull(groups = {ValidationWithId.class})
     private Long id;
 
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private String name;
+    private String questionText;
 
-    private String description;
-
-    private String author;
+    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
+    private String answer;
 
     @Min(value = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private Integer themeCount;
+    private BigDecimal cost;
 
-    @Valid
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    @Size(min = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private List<ThemeDTO> themes;
+    private Integer priority;
+
+    private String comment;
 }

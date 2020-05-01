@@ -3,12 +3,13 @@ package ge.tsotne.jeopardy.controller;
 import ge.tsotne.jeopardy.model.QuestionPack;
 import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
 import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
+import ge.tsotne.jeopardy.model.validation.ValidationWithId;
+import ge.tsotne.jeopardy.model.validation.ValidationWithoutId;
 import ge.tsotne.jeopardy.service.QuestionPackService;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
 
 
 @Controller
@@ -33,13 +34,13 @@ public class QuestionPackController {
 
     @ResponseBody
     @PostMapping("/question")
-    public QuestionPack add(@Valid @RequestBody QuestionPackDTO dto) {
+    public QuestionPack add(@Validated(ValidationWithoutId.class) @RequestBody QuestionPackDTO dto) {
         return questionPackService.add(dto);
     }
 
     @ResponseBody
     @PutMapping("/question/{id}")
-    public QuestionPack update(@PathVariable("id") Long id, @Valid @RequestBody QuestionPackDTO dto) {
+    public QuestionPack update(@PathVariable("id") Long id, @Validated(ValidationWithId.class) @RequestBody QuestionPackDTO dto) {
         return questionPackService.update(id, dto);
     }
 
