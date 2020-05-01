@@ -1,7 +1,6 @@
 package ge.tsotne.jeopardy.service;
 
 import ge.tsotne.jeopardy.Utils;
-import ge.tsotne.jeopardy.model.Question;
 import ge.tsotne.jeopardy.model.QuestionPack;
 import ge.tsotne.jeopardy.model.Theme;
 import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
@@ -10,8 +9,7 @@ import ge.tsotne.jeopardy.repository.QuestionPackRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.constraints.NotNull;
 
@@ -37,13 +35,15 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     }
 
     @Override
+    @Transactional(rollbackFor = Throwable.class)
     public QuestionPack add(@NotNull QuestionPackDTO dto) {
-//        validatePackBeforeSave(pack, false);
-//        return questionPackRepository.save(pack);
-        return null;
+        QuestionPack pack = new QuestionPack(dto);
+        prepareBeforeSave(pack, false);
+        return questionPackRepository.save(pack);
     }
 
     @Override
+    @Transactional(rollbackFor = Throwable.class)
     public QuestionPack update(long id, @NotNull QuestionPackDTO dto) {
 //        validatePackBeforeSave(pack, false);
 //        return questionPackRepository.save(pack);
@@ -51,6 +51,7 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     }
 
     @Override
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(Long id) {
     }
 
@@ -58,18 +59,19 @@ public class QuestionPackServiceImpl implements QuestionPackService {
         return userId.equals(Utils.getCurrentUserIdNotNull());
     }
 
+    private void prepareBeforeSave(@NotNull QuestionPack pack, boolean isUpdate) {
+        pack.getThemes().forEach(t -> {
+            t.setPack(pack);
+            t.getQuestions().forEach(q -> q.setTheme(t));
+        });
+        validatePackBeforeSave(pack, isUpdate);
+    }
+
     private void validatePackBeforeSave(@NotNull QuestionPack pack, boolean isUpdate) {
-        //TODO dto-ს ვალიდაცია შეიძლება ცალკე tool-ის დაწერა ანოტაციებით და რეფლექციით
         if (isUpdate) {
-            //TODO მხოლოდ update-ის შემოწმებები
             if (!isOwner(pack.getCreatedBy())) {
                 throw new RuntimeException("NOT_ALLOWED");
             }
-        }
-        if (pack.getThemeCount() == null ||
-                StringUtils.isEmpty(pack.getName()) ||
-                CollectionUtils.isEmpty(pack.getThemes())) {
-            throw new RuntimeException("VALIDATION_EXCEPTION");
         }
         if (pack.getThemeCount() != pack.getThemes().size()) {
             throw new RuntimeException("INCORRECT_THEME_COUNT");
@@ -78,18 +80,8 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     }
 
     private void validateThemeBeforeSave(@NotNull Theme t) {
-        if (StringUtils.isEmpty(t.getName())
-                || t.getQuestionCount() == null
-                || CollectionUtils.isEmpty(t.getQuestions())) {
-            throw new RuntimeException("VALIDATION_EXCEPTION");
-        }
-        if (t.getQuestionCount().equals(t.getQuestions().size())) {
+        if (!t.getQuestionCount().equals(t.getQuestions().size())) {
             throw new RuntimeException("INCORRECT_QUESTION_COUNT");
         }
-        t.getQuestions().forEach(this::validateQuestionBeforeSave);
-    }
-
-    private void validateQuestionBeforeSave(@NotNull Question q) {
-
     }
 }

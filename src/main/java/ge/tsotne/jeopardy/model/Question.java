@@ -1,18 +1,26 @@
 package ge.tsotne.jeopardy.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import ge.tsotne.jeopardy.model.dto.QuestionDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
+@BatchSize(size = 100)
+@Audited
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "QUESTIONS")
 @Data
+@NoArgsConstructor
 @SequenceGenerator(name = "seqQuestions", sequenceName = "SEQ_QUESTIONS", allocationSize = 1)
 public class Question extends AuditedEntity {
     @Id
@@ -39,8 +47,17 @@ public class Question extends AuditedEntity {
     @Column(name = "COMMENT", nullable = false)
     private String comment;
 
+    @NotAudited
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "THEME_ID", referencedColumnName = "ID", nullable = false)
     private Theme theme;
+
+    public Question(QuestionDTO dto) {
+        this.questionText = dto.getQuestionText();
+        this.answer = dto.getAnswer();
+        this.cost = dto.getCost();
+        this.priority = dto.getPriority();
+        this.comment = dto.getComment();
+    }
 }
