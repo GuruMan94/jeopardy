@@ -9,8 +9,8 @@ import org.hibernate.envers.Audited;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Audited
 @EqualsAndHashCode(callSuper = true)
@@ -40,16 +40,19 @@ public class QuestionPack extends AuditedEntity {
 
     @OrderBy("priority")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "pack")
-    private List<Theme> themes;
+    private List<Theme> themes = new ArrayList<>();
 
     public QuestionPack(QuestionPackDTO dto) {
         this.name = dto.getName();
         this.description = dto.getDescription();
         this.author = dto.getAuthor();
         this.themeCount = dto.getThemeCount();
-        this.themes = dto.getThemes()
-                .stream()
-                .map(Theme::new)
-                .collect(Collectors.toList());
+        for (int i = 0; i < dto.getThemes().size(); i++) {
+            themes.add(new Theme(dto.getThemes().get(i), i + 1));
+        }
+    }
+
+    public void updateInfo(QuestionPackDTO dto) {
+        //TODO
     }
 }

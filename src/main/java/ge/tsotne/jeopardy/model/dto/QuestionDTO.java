@@ -23,8 +23,5 @@ public class QuestionDTO {
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
     private BigDecimal cost;
 
-    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private Integer priority;
-
     private String comment;
 }

@@ -53,11 +53,11 @@ public class Question extends AuditedEntity {
     @JoinColumn(name = "THEME_ID", referencedColumnName = "ID", nullable = false)
     private Theme theme;
 
-    public Question(QuestionDTO dto) {
+    public Question(QuestionDTO dto, int priority) {
         this.questionText = dto.getQuestionText();
         this.answer = dto.getAnswer();
         this.cost = dto.getCost();
-        this.priority = dto.getPriority();
+        this.priority = priority;
         this.comment = dto.getComment();
     }
 }

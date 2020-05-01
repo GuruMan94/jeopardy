@@ -45,9 +45,10 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     @Override
     @Transactional(rollbackFor = Throwable.class)
     public QuestionPack update(long id, @NotNull QuestionPackDTO dto) {
-//        validatePackBeforeSave(pack, false);
-//        return questionPackRepository.save(pack);
-        return null;
+        QuestionPack pack = get(id);
+        pack.updateInfo(dto);
+        validatePackBeforeSave(pack, true);
+        return questionPackRepository.save(pack);
     }
 
     @Override

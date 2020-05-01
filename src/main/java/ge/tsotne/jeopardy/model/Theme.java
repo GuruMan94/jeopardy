@@ -12,8 +12,8 @@ import org.hibernate.envers.NotAudited;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @BatchSize(size = 100)
 @Audited
@@ -45,7 +45,7 @@ public class Theme extends AuditedEntity {
 
     @OrderBy("priority")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "theme")
-    private List<Question> questions;
+    private List<Question> questions = new ArrayList<>();
 
     @NotAudited
     @JsonIgnore
@@ -53,14 +53,13 @@ public class Theme extends AuditedEntity {
     @JoinColumn(name = "PACK_ID", referencedColumnName = "ID", nullable = false)
     private QuestionPack pack;
 
-    public Theme(ThemeDTO dto) {
+    public Theme(ThemeDTO dto, int priority) {
         this.name = dto.getName();
         this.description = dto.getDescription();
-        this.priority = dto.getPriority();
         this.questionCount = dto.getQuestionCount();
-        this.questions = dto.getQuestions()
-                .stream()
-                .map(Question::new)
-                .collect(Collectors.toList());
+        this.priority = priority;
+        for (int i = 0; i < dto.getQuestions().size(); i++) {
+            questions.add(new Question(dto.getQuestions().get(i), i + 1));
+        }
     }
 }

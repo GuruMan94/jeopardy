@@ -20,8 +20,6 @@ public class ThemeDTO {
 
     private String description;
 
-    private Integer priority;
-
     @Min(value = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
     private Integer questionCount;
