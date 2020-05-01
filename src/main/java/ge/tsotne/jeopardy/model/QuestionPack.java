@@ -18,7 +18,6 @@ public class QuestionPack extends AuditedEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqQuestionPacks")
     private Long id;
 
-    @NotNull
     @Column(name = "NAME", nullable = false)
     private String name;
 

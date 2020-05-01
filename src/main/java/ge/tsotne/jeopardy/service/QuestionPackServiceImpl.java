@@ -4,6 +4,7 @@ import ge.tsotne.jeopardy.Utils;
 import ge.tsotne.jeopardy.model.Question;
 import ge.tsotne.jeopardy.model.QuestionPack;
 import ge.tsotne.jeopardy.model.Theme;
+import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
 import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
 import ge.tsotne.jeopardy.repository.QuestionPackRepository;
 import org.springframework.data.domain.Page;
@@ -36,15 +37,17 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     }
 
     @Override
-    public QuestionPack add(@NotNull QuestionPack pack) {
-        validatePackBeforeSave(pack, false);
-        return questionPackRepository.save(pack);
+    public QuestionPack add(@NotNull QuestionPackDTO dto) {
+//        validatePackBeforeSave(pack, false);
+//        return questionPackRepository.save(pack);
+        return null;
     }
 
     @Override
-    public QuestionPack update(long id, @NotNull QuestionPack pack) {
-        validatePackBeforeSave(pack, false);
-        return questionPackRepository.save(pack);
+    public QuestionPack update(long id, @NotNull QuestionPackDTO dto) {
+//        validatePackBeforeSave(pack, false);
+//        return questionPackRepository.save(pack);
+        return null;
     }
 
     @Override

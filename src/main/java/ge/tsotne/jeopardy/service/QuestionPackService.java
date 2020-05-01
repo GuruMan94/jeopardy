@@ -1,6 +1,7 @@
 package ge.tsotne.jeopardy.service;
 
 import ge.tsotne.jeopardy.model.QuestionPack;
+import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
 import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
 import org.springframework.data.domain.Page;
 
@@ -11,9 +12,9 @@ public interface QuestionPackService {
 
     QuestionPack get(long id);
 
-    QuestionPack add(@NotNull QuestionPack pack);
+    QuestionPack add(@NotNull QuestionPackDTO dto);
 
-    QuestionPack update(long id, @NotNull QuestionPack pack);
+    QuestionPack update(long id, @NotNull QuestionPackDTO dto);
 
     void delete(Long id);
 }

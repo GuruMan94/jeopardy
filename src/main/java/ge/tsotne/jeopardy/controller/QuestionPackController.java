@@ -1,6 +1,7 @@
 package ge.tsotne.jeopardy.controller;
 
 import ge.tsotne.jeopardy.model.QuestionPack;
+import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
 import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
 import ge.tsotne.jeopardy.service.QuestionPackService;
 import org.springframework.data.domain.Page;
@@ -32,14 +33,14 @@ public class QuestionPackController {
 
     @ResponseBody
     @PostMapping("/question")
-    public QuestionPack add(@Valid @RequestBody QuestionPack pack) {
-        return questionPackService.add(pack);
+    public QuestionPack add(@Valid @RequestBody QuestionPackDTO dto) {
+        return questionPackService.add(dto);
     }
 
     @ResponseBody
     @PutMapping("/question/{id}")
-    public QuestionPack update(@PathVariable("id") Long id, @Valid @RequestBody QuestionPack pack) {
-        return questionPackService.update(id, pack);
+    public QuestionPack update(@PathVariable("id") Long id, @Valid @RequestBody QuestionPackDTO dto) {
+        return questionPackService.update(id, dto);
     }
 
     @ResponseBody
