@@ -12,4 +12,11 @@ public class Utils {
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         return principal.getId();
     }
+
+    public static long getCurrentUserIdNotNull() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) throw new RuntimeException("USER_NOT_FOUND");
+        UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+        return principal.getId();
+    }
 }
