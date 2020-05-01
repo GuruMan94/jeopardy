@@ -1,17 +1,19 @@
 package ge.tsotne.jeopardy.model;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "USERS")
 @SequenceGenerator(name = "SEQ_USER", sequenceName = "SEQ_USER", allocationSize = 1)
 @Data
 @NoArgsConstructor
-public class User {
+public class User extends AuditedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_USER")
     private Long id;
@@ -34,17 +36,9 @@ public class User {
     @Column(name = "LAST_NAME")
     private String lastName;
 
-    @Column(name = "ACTIVE", nullable = false, columnDefinition = "boolean default true")
-    private Boolean active;
-
     public User(String userName, String password, String email) {
         this.userName = userName;
         this.password = password;
         this.email = email;
-    }
-
-    @PrePersist
-    public void prePersist() {
-        this.active = true;
     }
 }
