@@ -12,7 +12,6 @@ import org.hibernate.envers.NotAudited;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
 
 @BatchSize(size = 100)
 @Audited
@@ -38,13 +37,13 @@ public class Question extends AuditedEntity {
     @Min(value = 1)
     @NotNull
     @Column(name = "COST", nullable = false)
-    private BigDecimal cost;
+    private Integer cost;
 
     @NotNull
     @Column(name = "PRIORITY", nullable = false)
     private Integer priority;
 
-    @Column(name = "COMMENT", nullable = false)
+    @Column(name = "COMMENT")
     private String comment;
 
     @NotAudited

@@ -34,6 +34,7 @@ public class Theme extends AuditedEntity {
     @Column(name = "DESCRIPTION")
     private String description;
 
+    @NotNull
     @Column(name = "PRIORITY", nullable = false)
     private Integer priority;
 

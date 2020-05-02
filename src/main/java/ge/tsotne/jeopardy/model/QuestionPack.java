@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class QuestionPack extends AuditedEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqQuestionPacks")
     private Long id;
 
+    @NotNull
     @Column(name = "NAME", nullable = false)
     private String name;
 

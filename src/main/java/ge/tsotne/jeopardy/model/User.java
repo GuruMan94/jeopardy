@@ -3,10 +3,12 @@ package ge.tsotne.jeopardy.model;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
+@Audited
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "USERS")

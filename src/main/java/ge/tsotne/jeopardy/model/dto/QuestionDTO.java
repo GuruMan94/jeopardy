@@ -6,7 +6,6 @@ import lombok.Data;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
 
 @Data
 public class QuestionDTO {
@@ -21,7 +20,7 @@ public class QuestionDTO {
 
     @Min(value = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private BigDecimal cost;
+    private Integer cost;
 
     private String comment;
 }
