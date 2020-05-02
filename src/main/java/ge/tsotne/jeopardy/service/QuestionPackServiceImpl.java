@@ -2,7 +2,6 @@ package ge.tsotne.jeopardy.service;
 
 import ge.tsotne.jeopardy.Utils;
 import ge.tsotne.jeopardy.model.QuestionPack;
-import ge.tsotne.jeopardy.model.Theme;
 import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
 import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
 import ge.tsotne.jeopardy.repository.QuestionPackRepository;
@@ -46,8 +45,7 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     @Transactional(rollbackFor = Throwable.class)
     public QuestionPack update(long id, @NotNull QuestionPackDTO dto) {
         QuestionPack pack = get(id);
-        pack.updateInfo(dto);
-        validatePackBeforeSave(pack, true);
+        prepareBeforeSave(pack, true);
         return questionPackRepository.save(pack);
     }
 
@@ -73,16 +71,6 @@ public class QuestionPackServiceImpl implements QuestionPackService {
             if (!isOwner(pack.getCreatedBy())) {
                 throw new RuntimeException("NOT_ALLOWED");
             }
-        }
-        if (pack.getThemeCount() != pack.getThemes().size()) {
-            throw new RuntimeException("INCORRECT_THEME_COUNT");
-        }
-        pack.getThemes().forEach(this::validateThemeBeforeSave);
-    }
-
-    private void validateThemeBeforeSave(@NotNull Theme t) {
-        if (!t.getQuestionCount().equals(t.getQuestions().size())) {
-            throw new RuntimeException("INCORRECT_QUESTION_COUNT");
         }
     }
 }

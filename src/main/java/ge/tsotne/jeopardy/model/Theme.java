@@ -10,7 +10,6 @@ import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 
 import javax.persistence.*;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +37,6 @@ public class Theme extends AuditedEntity {
     @Column(name = "PRIORITY", nullable = false)
     private Integer priority;
 
-    @Min(value = 1)
-    @NotNull
-    @Column(name = "QUESTION_COUNT", nullable = false)
-    private Integer questionCount;
-
     @OrderBy("priority")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "theme")
     private List<Question> questions = new ArrayList<>();
@@ -56,7 +50,6 @@ public class Theme extends AuditedEntity {
     public Theme(ThemeDTO dto, int priority) {
         this.name = dto.getName();
         this.description = dto.getDescription();
-        this.questionCount = dto.getQuestionCount();
         this.priority = priority;
         for (int i = 0; i < dto.getQuestions().size(); i++) {
             questions.add(new Question(dto.getQuestions().get(i), i + 1));

@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,11 +31,6 @@ public class QuestionPack extends AuditedEntity {
     @Column(name = "AUTHOR")
     private String author;
 
-    @Min(value = 1)
-    @NotNull
-    @Column(name = "THEME_COUNT", nullable = false)
-    private Integer themeCount;
-
     @OrderBy("priority")
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "pack")
     private List<Theme> themes = new ArrayList<>();
@@ -46,13 +39,8 @@ public class QuestionPack extends AuditedEntity {
         this.name = dto.getName();
         this.description = dto.getDescription();
         this.author = dto.getAuthor();
-        this.themeCount = dto.getThemeCount();
         for (int i = 0; i < dto.getThemes().size(); i++) {
             themes.add(new Theme(dto.getThemes().get(i), i + 1));
         }
-    }
-
-    public void updateInfo(QuestionPackDTO dto) {
-        //TODO
     }
 }
