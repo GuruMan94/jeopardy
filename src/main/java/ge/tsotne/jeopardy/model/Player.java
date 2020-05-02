@@ -1,6 +1,7 @@
 package ge.tsotne.jeopardy.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import ge.tsotne.jeopardy.configuration.UserPrincipal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.hibernate.envers.Audited;
@@ -27,6 +28,15 @@ public class Player extends AuditedEntity {
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
+    @JoinColumn(name = "USER_ID", referencedColumnName = "ID", insertable = false, updatable = false)
+    private User user;
+
+    @NotNull
+    @Column(name = "USER_NAME", nullable = false)
+    private String userName;
+
     @NotNull
     @Column(name = "POINT", nullable = false)
     private Integer point;
@@ -47,7 +57,14 @@ public class Player extends AuditedEntity {
 
     @PrePersist
     public void prePersist() {
+        super.prePersist();
         this.point = 0;
     }
 
+    public Player(long gameId, Role role, UserPrincipal user) {
+        this.gameId = gameId;
+        this.role = role;
+        this.userId = user.getId();
+        this.userName = user.getUsername();
+    }
 }

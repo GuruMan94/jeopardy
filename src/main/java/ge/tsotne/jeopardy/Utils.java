@@ -4,6 +4,8 @@ import ge.tsotne.jeopardy.configuration.UserPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import javax.validation.constraints.NotNull;
+
 public class Utils {
 
     public static Long getCurrentUserId() {
@@ -18,5 +20,12 @@ public class Utils {
         if (auth == null) throw new RuntimeException("USER_NOT_FOUND");
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         return principal.getId();
+    }
+
+    @NotNull
+    public static UserPrincipal getCurrentUserNotNull() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) throw new RuntimeException("USER_NOT_FOUND");
+        return (UserPrincipal) auth.getPrincipal();
     }
 }
