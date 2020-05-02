@@ -14,4 +14,6 @@ public interface QuestionPackRepository extends JpaRepository<QuestionPack, Long
     Optional<QuestionPack> findByIdAndCreatedByAndActiveTrue(long id, long createdBy);
 
     Page<QuestionPack> findByCreatedBy(long userId, Pageable pageable);
+
+    int countByIdAndActiveTrue(long id);
 }

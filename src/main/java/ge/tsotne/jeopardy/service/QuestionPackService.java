@@ -12,6 +12,8 @@ public interface QuestionPackService {
 
     QuestionPack get(long id);
 
+    boolean exists(long id);
+
     QuestionPack add(@NotNull QuestionPackDTO dto);
 
     QuestionPack update(long id, @NotNull QuestionPackDTO dto);

@@ -1,11 +1,16 @@
 package ge.tsotne.jeopardy.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ge.tsotne.jeopardy.model.dto.game.GameDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.envers.Audited;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
@@ -36,10 +41,12 @@ public class Game extends AuditedEntity {
     @Column(name = "PRIVATE", nullable = false, columnDefinition = "boolean default false", updatable = false)
     private Boolean privateGame;
 
+    @Min(value = 2)
     @NotNull
     @Column(name = "MAX_PLAYER_COUNT", nullable = false, updatable = false)
     private Integer maxPlayerCount;
 
+    @Min(value = 1)
     @NotNull
     @Column(name = "SECONDS_FOR_ANSWER", nullable = false, updatable = false)
     private Integer secondsForAnswer;
@@ -48,7 +55,9 @@ public class Game extends AuditedEntity {
     @Column(name = "QUESTION_PACK_ID", nullable = false, updatable = false)
     private Long questionPackId;
 
-    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.EAGER)
+    @JsonIgnore
+    @BatchSize(size = 100)
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
     @JoinColumn(name = "QUESTION_PACK_ID", referencedColumnName = "ID", insertable = false, updatable = false)
     private QuestionPack questionPack;
 
@@ -66,4 +75,12 @@ public class Game extends AuditedEntity {
         this.status = Status.NEW;
     }
 
+    public Game(GameDTO dto) {
+        this.name = dto.getName();
+        this.password = dto.getPassword();
+        this.privateGame = !StringUtils.isEmpty(password);
+        this.maxPlayerCount = dto.getMaxPlayerCount();
+        this.secondsForAnswer = dto.getSecondsForAnswer();
+        this.questionPackId = dto.getQuestionPackId();
+    }
 }

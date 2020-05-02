@@ -34,6 +34,11 @@ public class QuestionPackServiceImpl implements QuestionPackService {
     }
 
     @Override
+    public boolean exists(long id) {
+        return questionPackRepository.countByIdAndActiveTrue(id) > 0;
+    }
+
+    @Override
     @Transactional(rollbackFor = Throwable.class)
     public QuestionPack add(@NotNull QuestionPackDTO dto) {
         QuestionPack pack = new QuestionPack(dto);

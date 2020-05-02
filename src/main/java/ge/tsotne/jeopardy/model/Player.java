@@ -15,6 +15,10 @@ import javax.validation.constraints.NotNull;
 @Data
 @SequenceGenerator(name = "seqPlayers", sequenceName = "SEQ_PLAYERS", allocationSize = 1)
 public class Player extends AuditedEntity {
+    public enum Role {
+        PLAYER, SHOWMAN, SPECTATOR
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqPlayers")
     private Long id;
@@ -35,6 +39,11 @@ public class Player extends AuditedEntity {
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REFRESH)
     @JoinColumn(name = "GAME_ID", referencedColumnName = "ID", insertable = false, updatable = false)
     private Game game;
+
+    @NotNull
+    @Enumerated
+    @Column(name = "ROLE", nullable = false)
+    private Role role;
 
     @PrePersist
     public void prePersist() {
