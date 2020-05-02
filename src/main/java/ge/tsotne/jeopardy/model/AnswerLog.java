@@ -3,6 +3,7 @@ package ge.tsotne.jeopardy.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -11,6 +12,7 @@ import javax.validation.constraints.NotNull;
 @Entity
 @Table(name = "ANSWER_LOG")
 @Data
+@NoArgsConstructor
 @SequenceGenerator(name = "seqAnswerLog", sequenceName = "SEQ_ANSWER_LOG", allocationSize = 1)
 public class AnswerLog extends AuditedEntity {
     @Id

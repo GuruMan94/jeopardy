@@ -5,6 +5,7 @@ import ge.tsotne.jeopardy.configuration.UserPrincipal;
 import ge.tsotne.jeopardy.model.Game;
 import ge.tsotne.jeopardy.model.Game_;
 import ge.tsotne.jeopardy.model.Player;
+import ge.tsotne.jeopardy.model.dto.game.EnterGameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
 import ge.tsotne.jeopardy.repository.GameRepository;
@@ -47,6 +48,12 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    public Game get(long id) {
+        return gameRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("GAME_NOT_FOUND"));
+    }
+
+    @Override
     @Transactional(rollbackFor = Throwable.class)
     public Game create(GameDTO dto) {
         if (exists(dto.getName())) {
@@ -59,6 +66,50 @@ public class GameServiceImpl implements GameService {
         Player player = savePlayer(game.getId(), dto.getRole());
         game.getPlayers().add(player);
         return game;
+    }
+
+    @Override
+    public void enter(long id, EnterGameDTO dto) {
+        Game game = get(id);
+        validate(game, dto);
+        savePlayer(id, dto.getRole());
+    }
+
+    private void validate(Game game, EnterGameDTO dto) {
+        if (game.getPrivateGame()) {
+            validatePassword(game, dto);
+        }
+        if (game.getStatus() == Game.Status.FINISHED) {
+            throw new RuntimeException("CANT_ENTER_GAME");
+        }
+        boolean exists = game.getPlayers()
+                .stream().anyMatch(p -> p.getUserId().equals(Utils.getCurrentUserIdNotNull()));
+        if (exists) {
+            throw new RuntimeException("PLAYER_ALREADY_IN_GAME");
+        }
+
+        if (dto.getRole() == Player.Role.SHOWMAN) {
+            boolean match = game.getPlayers()
+                    .stream().anyMatch(p -> p.getRole().equals(Player.Role.SHOWMAN));
+            if (match) {
+                throw new RuntimeException("CANT_ENTER_AS_SHOWMAN");
+            }
+        } else if (dto.getRole() == Player.Role.PLAYER) {
+            long count = game.getPlayers()
+                    .stream().filter(p -> p.getRole().equals(Player.Role.PLAYER)).count();
+            if (count == game.getMaxPlayerCount()) {
+                throw new RuntimeException("CANT_ENTER_AS_PLAYER");
+            }
+        }
+    }
+
+    private void validatePassword(Game game, EnterGameDTO dto) {
+        if (StringUtils.isEmpty(game.getPassword())
+                || StringUtils.isEmpty(dto.getPassword())
+                || !game.getPassword().equals(dto.getPassword())) {
+            //TODO რაღაც რაოდენობის ცდის შემდეგ დაებლოკოს 5 წუთით მაგალითად
+            throw new RuntimeException("INCORRECT_PASSWORD");
+        }
     }
 
     public boolean exists(String name) {

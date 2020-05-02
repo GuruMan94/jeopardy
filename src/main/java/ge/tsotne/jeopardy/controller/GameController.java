@@ -37,12 +37,12 @@ public class GameController {
     @ResponseBody
     @PostMapping("/game/{id}/enter")
     public void enter(@PathVariable Long id, @RequestBody @Valid EnterGameDTO dto) {
-
+        gameService.enter(id, dto);
     }
 
     //TODO მომხმარებლის შესვლა თამაშში/პაროლის შემოწმება
 
     //TODO თამაშის დაპაუზება
 
-    //TODO
+    //TODO game history
 }

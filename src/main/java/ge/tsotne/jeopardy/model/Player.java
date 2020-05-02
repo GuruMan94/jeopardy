@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ge.tsotne.jeopardy.configuration.UserPrincipal;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
 
 import javax.persistence.*;
@@ -14,6 +15,7 @@ import javax.validation.constraints.NotNull;
 @Entity
 @Table(name = "PLAYERS")
 @Data
+@NoArgsConstructor
 @SequenceGenerator(name = "seqPlayers", sequenceName = "SEQ_PLAYERS", allocationSize = 1)
 public class Player extends AuditedEntity {
     public enum Role {
