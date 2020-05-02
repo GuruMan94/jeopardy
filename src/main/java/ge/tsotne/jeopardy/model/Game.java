@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 @Audited
@@ -67,7 +68,7 @@ public class Game extends AuditedEntity {
     private Status status;
 
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.REFRESH, mappedBy = "game")
-    private List<Player> players;
+    private List<Player> players = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
