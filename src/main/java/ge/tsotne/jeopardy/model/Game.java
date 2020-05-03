@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,6 +68,9 @@ public class Game extends AuditedEntity {
     @Column(name = "STATUS", nullable = false)
     private Status status;
 
+    @Column(name = "START_DATE")
+    LocalDateTime startDate;
+
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.REFRESH, mappedBy = "game")
     private List<Player> players = new ArrayList<>();
 
@@ -83,5 +87,10 @@ public class Game extends AuditedEntity {
         this.maxPlayerCount = dto.getMaxPlayerCount();
         this.secondsForAnswer = dto.getSecondsForAnswer();
         this.questionPackId = dto.getQuestionPackId();
+    }
+
+    public void start() {
+        this.status = Game.Status.STARTED;
+        this.startDate = LocalDateTime.now();
     }
 }

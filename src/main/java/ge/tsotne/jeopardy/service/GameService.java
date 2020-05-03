@@ -15,4 +15,6 @@ public interface GameService {
     void enter(long id, EnterGameDTO dto);
 
     Game get(long id);
+
+    void start(long id);
 }

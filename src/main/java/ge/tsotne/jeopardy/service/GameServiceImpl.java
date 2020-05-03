@@ -19,6 +19,8 @@ import javax.persistence.criteria.Predicate;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
+import static ge.tsotne.jeopardy.model.Player.Role.SHOWMAN;
+
 @Service
 public class GameServiceImpl implements GameService {
     private GameRepository gameRepository;
@@ -75,6 +77,29 @@ public class GameServiceImpl implements GameService {
         savePlayer(id, dto.getRole());
     }
 
+    @Override
+    public void start(long id) {
+        if (!isShowMan(id)) {
+            throw new RuntimeException("ONLY_SHOWMAN_CANT_START_THE_GAME");
+        }
+        Game game = get(id);
+        if (game.getStatus() != Game.Status.NEW) {
+            throw new RuntimeException("CANT_START_GAME");
+        }
+        game.start();
+        gameRepository.save(game);
+    }
+
+    private boolean isShowMan(long gameId) {
+        long userId = Utils.getCurrentUserIdNotNull();
+        return playerRepository.countByGameIdAndUserIdAndRoleAndActiveTrue(gameId, userId, SHOWMAN) > 0;
+    }
+
+    private boolean isMember(long gameId) {
+        long userId = Utils.getCurrentUserIdNotNull();
+        return playerRepository.countByGameIdAndUserIdAndActiveTrue(gameId, userId) > 0;
+    }
+
     private void validate(Game game, EnterGameDTO dto) {
         if (game.getPrivateGame()) {
             validatePassword(game, dto);
@@ -88,9 +113,9 @@ public class GameServiceImpl implements GameService {
             throw new RuntimeException("PLAYER_ALREADY_IN_GAME");
         }
 
-        if (dto.getRole() == Player.Role.SHOWMAN) {
+        if (dto.getRole() == SHOWMAN) {
             boolean match = game.getPlayers()
-                    .stream().anyMatch(p -> p.getRole().equals(Player.Role.SHOWMAN));
+                    .stream().anyMatch(p -> p.getRole().equals(SHOWMAN));
             if (match) {
                 throw new RuntimeException("CANT_ENTER_AS_SHOWMAN");
             }

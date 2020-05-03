@@ -6,18 +6,22 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script>
-        const ws = new SockJS("/questions");
+        const ws = new SockJS("/message");
         const stompClient = Stomp.over(ws);
         stompClient.connect({}, function (frame) {
             console.log("Connected ...");
 
-            stompClient.subscribe("/topic/questions", function (message) {
-                console.log("Question: ", message);
+            stompClient.subscribe("/game/4/enter", function (message) {
+                console.log("Add game: ", message);
             });
 
-            stompClient.subscribe("/user/topic/personal/questions", function (message) {
-                console.log("Personal question: ", message);
+            stompClient.subscribe("/game/4/start", function (message) {
+                console.log("Start game: ", message);
             });
+
+            // stompClient.subscribe("/user/topic/personal/questions", function (message) {
+            //     console.log("Personal question: ", message);
+            // });
 
             stompClient.subscribe("/user/error", function (message) {
                 console.log("Error: ", message);
