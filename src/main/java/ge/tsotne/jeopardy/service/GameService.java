@@ -17,4 +17,8 @@ public interface GameService {
     Game get(long id);
 
     void start(long id);
+
+    void end(long id);
+
+    Game getActive();
 }

@@ -7,10 +7,7 @@ import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
 import ge.tsotne.jeopardy.service.GameService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
@@ -40,6 +37,19 @@ public class GameController {
     }
 
     @ResponseBody
+    @GetMapping("/game/{id}")
+    //TODO check if has permission
+    public Game get(@PathVariable Long id) {
+        return gameService.get(id);
+    }
+
+    @ResponseBody
+    @GetMapping("/game/active")
+    public Game getActive() {
+        return gameService.getActive();
+    }
+
+    @ResponseBody
     @PostMapping("/game/{id}/enter")
     public void enter(@PathVariable Long id, @RequestBody @Valid EnterGameDTO dto) {
         gameService.enter(id, dto);
@@ -53,6 +63,14 @@ public class GameController {
         messagingTemplate.convertAndSend("/game/" + id + "/start", LocalDate.now());
     }
 
+    @ResponseBody
+    @PostMapping("/game/{id}/end")
+    public void end(@PathVariable Long id) {
+        gameService.end(id);
+        messagingTemplate.convertAndSend("/game/" + id + "/end", LocalDate.now());
+    }
+
+    //TODO get game results players with points
 
     //TODO თამაშის დაწყება,დაპაუზება
 

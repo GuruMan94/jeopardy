@@ -56,6 +56,12 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    public Game getActive() {
+        return gameRepository.findByPlayerId(Utils.getCurrentUserIdNotNull())
+                .orElse(null);
+    }
+
+    @Override
     @Transactional(rollbackFor = Throwable.class)
     public Game create(GameDTO dto) {
         if (exists(dto.getName())) {
@@ -79,7 +85,7 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public void start(long id) {
-        if (!isShowMan(id)) {
+        if (isNotShowMan(id)) {
             throw new RuntimeException("ONLY_SHOWMAN_CANT_START_THE_GAME");
         }
         Game game = get(id);
@@ -90,9 +96,19 @@ public class GameServiceImpl implements GameService {
         gameRepository.save(game);
     }
 
-    private boolean isShowMan(long gameId) {
+    @Override
+    public void end(long id) {
+        if (isNotShowMan(id)) {
+            throw new RuntimeException("ONLY_SHOWMAN_CANT_END_THE_GAME");
+        }
+        Game game = get(id);
+        game.end();
+        gameRepository.save(game);
+    }
+
+    private boolean isNotShowMan(long gameId) {
         long userId = Utils.getCurrentUserIdNotNull();
-        return playerRepository.countByGameIdAndUserIdAndRoleAndActiveTrue(gameId, userId, SHOWMAN) > 0;
+        return playerRepository.countByGameIdAndUserIdAndRoleAndActiveTrue(gameId, userId, SHOWMAN) == 0;
     }
 
     private boolean isMember(long gameId) {
@@ -107,6 +123,7 @@ public class GameServiceImpl implements GameService {
         if (game.getStatus() == Game.Status.FINISHED) {
             throw new RuntimeException("CANT_ENTER_GAME");
         }
+        //TODO if already in another game
         boolean exists = game.getPlayers()
                 .stream().anyMatch(p -> p.getUserId().equals(Utils.getCurrentUserIdNotNull()));
         if (exists) {

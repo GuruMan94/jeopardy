@@ -36,6 +36,7 @@ public class Game extends AuditedEntity {
     @Column(name = "NAME", nullable = false, updatable = false)
     private String name;
 
+    @JsonIgnore
     @Column(name = "PASSWORD", updatable = false)
     private String password;
 
@@ -69,7 +70,10 @@ public class Game extends AuditedEntity {
     private Status status;
 
     @Column(name = "START_DATE")
-    LocalDateTime startDate;
+    private LocalDateTime startDate;
+
+    @Column(name = "END_DATE")
+    private LocalDateTime endDate;
 
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.REFRESH, mappedBy = "game")
     private List<Player> players = new ArrayList<>();
@@ -90,7 +94,12 @@ public class Game extends AuditedEntity {
     }
 
     public void start() {
-        this.status = Game.Status.STARTED;
+        this.status = Status.STARTED;
         this.startDate = LocalDateTime.now();
+    }
+
+    public void end() {
+        this.status = Status.FINISHED;
+        this.endDate = LocalDateTime.now();
     }
 }

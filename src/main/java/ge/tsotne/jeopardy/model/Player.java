@@ -26,6 +26,7 @@ public class Player extends AuditedEntity {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seqPlayers")
     private Long id;
 
+    @JsonIgnore
     @NotNull
     @Column(name = "USER_ID", nullable = false)
     private Long userId;
@@ -43,6 +44,7 @@ public class Player extends AuditedEntity {
     @Column(name = "POINT", nullable = false)
     private Integer point;
 
+    @JsonIgnore
     @NotNull
     @Column(name = "GAME_ID", nullable = false)
     private Long gameId;
