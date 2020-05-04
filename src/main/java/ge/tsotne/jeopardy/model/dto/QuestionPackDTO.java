@@ -5,7 +5,6 @@ import ge.tsotne.jeopardy.model.validation.ValidationWithoutId;
 import lombok.Data;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
@@ -21,10 +20,6 @@ public class QuestionPackDTO {
     private String description;
 
     private String author;
-
-    @Min(value = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
-    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private Integer themeCount;
 
     @Valid
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})

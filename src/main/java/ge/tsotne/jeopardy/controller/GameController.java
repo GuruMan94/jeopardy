@@ -61,6 +61,7 @@ public class GameController {
     public void start(@PathVariable Long id) {
         gameService.start(id);
         messagingTemplate.convertAndSend("/game/" + id + "/start", LocalDate.now());
+        //TODO თამაშის დაწყების შემდეგ ერთწუთიანი მზადყოფნა
     }
 
     @ResponseBody
@@ -70,9 +71,15 @@ public class GameController {
         messagingTemplate.convertAndSend("/game/" + id + "/end", LocalDate.now());
     }
 
-    //TODO get game results players with points
+    //TODO get game results players with points,duration,percentage % of correct answers,answers count
 
-    //TODO თამაშის დაწყება,დაპაუზება
+    //TODO თამაშის დაპაუზება, უნდა შეიძლებოდეს თამაშის დაპაუზება ნებისმიერ მომენტში
+    // ნებისმიერ იუზერს და განახლებაც უნდა შეეძლოს ნებისმიერს
+    // ასევე თამაში პაუზდება მას შემდეგ რაც ვიღაც დააჭერს ღილაკზე ხელს, სანამ პასუხს არ გასცემს ან საპასუხო დრო არ ამოიწურება
+    // თამაშის განახლების შემდეგ პამ პამ პამ თავიდან აითვლება
 
-    //TODO game history
+
+    //TODO game history თამაშის ისტორია ვინ რამდენჯერ უპასუხა
+
+    //TODO game history ყველა თამაშის ისტორიული რეპორტი, სულ ნაპასუხები კითხვები და კოეფიციენტები
 }

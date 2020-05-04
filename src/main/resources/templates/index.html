@@ -6,47 +6,90 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script>
-        const ws = new SockJS("/message");
-        const stompClient = Stomp.over(ws);
-        stompClient.connect({}, function (frame) {
-            console.log("Connected ...");
 
-            stompClient.subscribe("/game/4/enter", function (message) {
-                console.log("Add game: ", message);
-            });
-
-            stompClient.subscribe("/game/4/start", function (message) {
-                console.log("Start game: ", message);
-            });
-
-            // stompClient.subscribe("/user/topic/personal/questions", function (message) {
-            //     console.log("Personal question: ", message);
-            // });
-
-            stompClient.subscribe("/user/error", function (message) {
-                console.log("Error: ", message);
-            });
-
-        }, function (error) {
-            console.log("Error:", error);
-        });
-
-        function sendMessage() {
-            stompClient.send("/app/questions", {}, "some message")
-        }
-
-        function sendPrivateMessage() {
-            stompClient.send("/app/personal/questions", {}, "some private message")
-        }
-
-        function addUser() {
-            stompClient.send("/app/game.addUser", {}, "add user")
-        }
     </script>
 </head>
 <body>
 <button onclick="sendMessage()">Send message</button>
 <button onclick="sendPrivateMessage()">Send private message</button>
 <button onclick="addUser()">Add User</button>
+<br/>
+<br/>
+
+<canvas id="myCanvas" width="600px" height="300px" style="border: 2px solid black"></canvas>
+
+<script>
+    const ws = new SockJS("/message");
+    const stompClient = Stomp.over(ws);
+    let question;
+
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext('2d');
+
+    stompClient.connect({}, function (frame) {
+        console.log("Connected ...");
+
+        stompClient.subscribe("/game/4/enter", function (message) {
+            console.log("Add game: ", message);
+        });
+
+        stompClient.subscribe("/game/4/start", function (message) {
+            fillCanvasText(message.body, ctx);
+        });
+
+        stompClient.subscribe("/game/4/end", function (message) {
+            fillCanvasText('Finish ...', ctx);
+        });
+
+        stompClient.subscribe("/game/4/theme/start", function (message) {
+            fillCanvasText(message.body, ctx);
+        });
+
+        stompClient.subscribe("/game/4/theme/end", function (message) {
+            // console.log("End Theme: ", message.body);
+        });
+
+        stompClient.subscribe("/game/4/question", function (message) {
+            question += " " + message.body;
+            fillCanvasText(question, ctx);
+        });
+
+        stompClient.subscribe("/game/4/question/start", function (message) {
+            console.log("Question Start with cost:", message.body);
+            question = "";
+        });
+
+        stompClient.subscribe("/game/4/question/end", function (message) {
+            // console.log("Question: ", question);
+        });
+
+        stompClient.subscribe("/user/error", function (message) {
+            console.log("Error: ", message);
+        });
+
+    }, function (error) {
+        console.log("Error:", error);
+    });
+
+    function sendMessage() {
+        stompClient.send("/app/questions", {}, "some message")
+    }
+
+    function sendPrivateMessage() {
+        stompClient.send("/app/personal/questions", {}, "some private message")
+    }
+
+    function addUser() {
+        stompClient.send("/app/game.addUser", {}, "add user")
+    }
+
+    function fillCanvasText(text, ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '50px Helvetica';
+        ctx.fillStyle = 'purple';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    }
+</script>
 </body>
 </html>

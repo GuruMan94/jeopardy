@@ -6,18 +6,22 @@ import ge.tsotne.jeopardy.model.Game;
 import ge.tsotne.jeopardy.model.Game_;
 import ge.tsotne.jeopardy.model.Player;
 import ge.tsotne.jeopardy.model.dto.game.EnterGameDTO;
-import ge.tsotne.jeopardy.model.dto.game.GameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
+import ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO;
 import ge.tsotne.jeopardy.repository.GameRepository;
 import ge.tsotne.jeopardy.repository.PlayerRepository;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.criteria.Predicate;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static ge.tsotne.jeopardy.model.Player.Role.SHOWMAN;
 
@@ -26,13 +30,16 @@ public class GameServiceImpl implements GameService {
     private GameRepository gameRepository;
     private QuestionPackService questionPackService;
     private PlayerRepository playerRepository;
+    private SimpMessagingTemplate messagingTemplate;
+    private static final ConcurrentHashMap<Long, GameDTO> activeGames = new ConcurrentHashMap<>();
 
     public GameServiceImpl(GameRepository gameRepository,
                            QuestionPackService questionPackService,
-                           PlayerRepository playerRepository) {
+                           PlayerRepository playerRepository, SimpMessagingTemplate messagingTemplate) {
         this.gameRepository = gameRepository;
         this.questionPackService = questionPackService;
         this.playerRepository = playerRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Override
@@ -63,7 +70,7 @@ public class GameServiceImpl implements GameService {
 
     @Override
     @Transactional(rollbackFor = Throwable.class)
-    public Game create(GameDTO dto) {
+    public Game create(ge.tsotne.jeopardy.model.dto.game.GameDTO dto) {
         if (exists(dto.getName())) {
             throw new RuntimeException("GAME_ALREADY_EXISTS_WITH_THIS_NAME");
         }
@@ -77,6 +84,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    @Transactional(rollbackFor = Throwable.class)
     public void enter(long id, EnterGameDTO dto) {
         Game game = get(id);
         validate(game, dto);
@@ -84,19 +92,22 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    @Transactional(rollbackFor = Throwable.class)
     public void start(long id) {
+        Game game = get(id);
         if (isNotShowMan(id)) {
             throw new RuntimeException("ONLY_SHOWMAN_CANT_START_THE_GAME");
         }
-        Game game = get(id);
         if (game.getStatus() != Game.Status.NEW) {
             throw new RuntimeException("CANT_START_GAME");
         }
         game.start();
         gameRepository.save(game);
+        addToActiveGames(game);
     }
 
     @Override
+    @Transactional(rollbackFor = Throwable.class)
     public void end(long id) {
         if (isNotShowMan(id)) {
             throw new RuntimeException("ONLY_SHOWMAN_CANT_END_THE_GAME");
@@ -104,6 +115,10 @@ public class GameServiceImpl implements GameService {
         Game game = get(id);
         game.end();
         gameRepository.save(game);
+    }
+
+    public ConcurrentHashMap<Long, GameDTO> getActiveGames() {
+        return activeGames;
     }
 
     private boolean isNotShowMan(long gameId) {
@@ -162,5 +177,58 @@ public class GameServiceImpl implements GameService {
         @NotNull UserPrincipal user = Utils.getCurrentUserNotNull();
         Player player = new Player(gameId, role, user);
         return playerRepository.saveAndFlush(player);
+    }
+
+    private void addToActiveGames(Game game) {
+        activeGames.put(game.getId(), new GameDTO(game));
+    }
+
+    @Async
+    public void sendQuestionChunk(GameDTO g) {
+        if (g.getPaused() || LocalDateTime.now().compareTo(g.getPausedUntil()) < 0) {
+            System.out.println("...");
+            return;
+        }
+        GameDTO.Theme theme = g.getThemes().get(g.getLastThemeIndex());
+        if (!theme.getNameSent()) {
+            messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/start", theme.getName());
+            System.out.println("Sending theme name and wait 5 seconds");
+            System.out.println("Theme name is " + theme.getName());
+            g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
+            theme.setNameSent(true);
+        } else {
+            GameDTO.Theme.Question question = theme.getQuestions().get(theme.getLastQuestionIndex());
+            if (!question.getCostSent()) {
+                messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/start", question.getCost());
+                question.setCostSent(true);
+            } else {
+                String message = question.getText()[question.getLastIndex()];
+                messagingTemplate.convertAndSend("/game/" + g.getId() + "/question", message);
+                System.out.println("Sending question cost and wait 3 seconds");
+                g.setPausedUntil(LocalDateTime.now().plusSeconds(3));
+                System.out.println("The message is " + message);
+                question.incrementLastIndex();
+                if (question.getText().length == question.getLastIndex()) {
+                    theme.incrementQuestionIndex();
+                    if (theme.getQuestionCount() == theme.getLastQuestionIndex()) {
+                        g.incrementThemeIndex();
+                        if (g.getThemeCount() == g.getLastThemeIndex()) {
+                            System.out.println("End the question pack");
+                            messagingTemplate.convertAndSend("/game/" + g.getId() + "/end", LocalDateTime.now());
+                            // ამ დროს საერთოდ უნდა ამოიშალოს
+                            g.setPaused(true);
+                            return;
+                        }
+                        messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/end", theme.getName());
+                        g.setPausedUntil(LocalDateTime.now().plusSeconds(10));
+                        System.out.println("Theme is Finished wait 10 second");
+                        return;
+                    }
+                    g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
+                    messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", message);
+                    System.out.println("Question is finished,wait 3 seconds");
+                }
+            }
+        }
     }
 }

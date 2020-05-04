@@ -6,6 +6,7 @@ import ge.tsotne.jeopardy.model.dto.game.GameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public interface GameService {
     List<Game> search(GameSearchDTO dto);
@@ -21,4 +22,8 @@ public interface GameService {
     void end(long id);
 
     Game getActive();
+
+    void sendQuestionChunk(ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO dto);
+
+    ConcurrentHashMap<Long, ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO> getActiveGames();
 }
