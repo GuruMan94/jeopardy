@@ -264,8 +264,7 @@ public class GameServiceImpl implements GameService {
 
     private void endGame(GameDTO g) {
         messagingTemplate.convertAndSend("/game/" + g.getId() + "/end", LocalDateTime.now());
-        // ამ დროს საერთოდ უნდა ამოიშალოს
-        g.setPaused(true);
+        activeGames.remove(g.getId());
     }
 
     private void questionEnd(GameDTO g, String message) {
