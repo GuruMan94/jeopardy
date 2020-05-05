@@ -34,7 +34,7 @@
         });
 
         stompClient.subscribe("/game/4/start", function (message) {
-            fillCanvasText(message.body, ctx);
+            fillCanvasText("Start ...", ctx);
         });
 
         stompClient.subscribe("/game/4/end", function (message) {
@@ -56,6 +56,7 @@
 
         stompClient.subscribe("/game/4/question/start", function (message) {
             console.log("Question Start with cost:", message.body);
+            fillCanvasText(message.body, ctx);
             question = "";
         });
 

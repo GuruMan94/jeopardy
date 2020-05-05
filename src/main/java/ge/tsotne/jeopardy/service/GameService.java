@@ -26,4 +26,10 @@ public interface GameService {
     void sendQuestionChunk(ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO dto);
 
     ConcurrentHashMap<Long, ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO> getActiveGames();
+
+    void pause(long id);
+
+    void resume(long id);
+
+    void answer(long id);
 }

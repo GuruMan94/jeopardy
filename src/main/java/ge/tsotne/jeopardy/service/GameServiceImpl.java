@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static ge.tsotne.jeopardy.model.Player.Role.PLAYER;
 import static ge.tsotne.jeopardy.model.Player.Role.SHOWMAN;
 
 @Service
@@ -58,6 +59,9 @@ public class GameServiceImpl implements GameService {
 
     @Override
     public Game get(long id) {
+        if (isNotMember(id)) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
         return gameRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("GAME_NOT_FOUND"));
     }
@@ -96,7 +100,7 @@ public class GameServiceImpl implements GameService {
     public void start(long id) {
         Game game = get(id);
         if (isNotShowMan(id)) {
-            throw new RuntimeException("ONLY_SHOWMAN_CANT_START_THE_GAME");
+            throw new RuntimeException("NOT_ALLOWED");
         }
         if (game.getStatus() != Game.Status.NEW) {
             throw new RuntimeException("CANT_START_GAME");
@@ -110,11 +114,43 @@ public class GameServiceImpl implements GameService {
     @Transactional(rollbackFor = Throwable.class)
     public void end(long id) {
         if (isNotShowMan(id)) {
-            throw new RuntimeException("ONLY_SHOWMAN_CANT_END_THE_GAME");
+            throw new RuntimeException("NOT_ALLOWED");
         }
         Game game = get(id);
         game.end();
         gameRepository.save(game);
+    }
+
+    @Override
+    public void answer(long id) {
+        if (isNotPlayer(id)) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
+        GameDTO game = activeGames.get(id);
+        long userId = Utils.getCurrentUserIdNotNull();
+        if (game.isPaused()) return;
+
+
+    }
+
+    @Override
+    public void pause(long id) {
+        if (isNotMember(id)) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
+        GameDTO game = activeGames.get(id);
+        if (game == null) return;
+        game.setPaused(true);
+    }
+
+    @Override
+    public void resume(long id) {
+        if (isNotMember(id)) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
+        GameDTO game = activeGames.get(id);
+        if (game == null) return;
+        game.setPaused(false);
     }
 
     public ConcurrentHashMap<Long, GameDTO> getActiveGames() {
@@ -126,9 +162,14 @@ public class GameServiceImpl implements GameService {
         return playerRepository.countByGameIdAndUserIdAndRoleAndActiveTrue(gameId, userId, SHOWMAN) == 0;
     }
 
-    private boolean isMember(long gameId) {
+    private boolean isNotPlayer(long gameId) {
         long userId = Utils.getCurrentUserIdNotNull();
-        return playerRepository.countByGameIdAndUserIdAndActiveTrue(gameId, userId) > 0;
+        return playerRepository.countByGameIdAndUserIdAndRoleAndActiveTrue(gameId, userId, PLAYER) == 0;
+    }
+
+    private boolean isNotMember(long gameId) {
+        long userId = Utils.getCurrentUserIdNotNull();
+        return playerRepository.countByGameIdAndUserIdAndActiveTrue(gameId, userId) <= 0;
     }
 
     private void validate(Game game, EnterGameDTO dto) {
@@ -185,50 +226,68 @@ public class GameServiceImpl implements GameService {
 
     @Async
     public void sendQuestionChunk(GameDTO g) {
-        if (g.getPaused() || LocalDateTime.now().compareTo(g.getPausedUntil()) < 0) {
+        if (g.isPaused() || LocalDateTime.now().compareTo(g.getPausedUntil()) < 0) {
             System.out.println("...");
             return;
         }
-        GameDTO.Theme theme = g.getThemes().get(g.getLastThemeIndex());
-        if (!theme.getNameSent()) {
-            messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/start", theme.getName());
-            System.out.println("Sending theme name and wait 5 seconds");
-            System.out.println("Theme name is " + theme.getName());
-            g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
-            theme.setNameSent(true);
+        GameDTO.Theme theme = g.getCurrentTheme();
+        if (!theme.isNameSent()) {
+            startTheme(g, theme);
         } else {
-            GameDTO.Theme.Question question = theme.getQuestions().get(theme.getLastQuestionIndex());
-            if (!question.getCostSent()) {
-                messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/start", question.getCost());
-                question.setCostSent(true);
+            GameDTO.Theme.Question question = theme.getCurrentQuestion();
+            if (!question.isCostSent()) {
+                questionStart(g, question);
             } else {
-                String message = question.getText()[question.getLastIndex()];
-                messagingTemplate.convertAndSend("/game/" + g.getId() + "/question", message);
-                System.out.println("Sending question cost and wait 3 seconds");
-                g.setPausedUntil(LocalDateTime.now().plusSeconds(3));
-                System.out.println("The message is " + message);
-                question.incrementLastIndex();
-                if (question.getText().length == question.getLastIndex()) {
+                String message = question.getCurrentChunk();
+                sentQuestionChunk(g, question, message);
+                if (question.isLastChunk()) {
                     theme.incrementQuestionIndex();
-                    if (theme.getQuestionCount() == theme.getLastQuestionIndex()) {
+                    if (theme.isLastQuestion()) {
                         g.incrementThemeIndex();
-                        if (g.getThemeCount() == g.getLastThemeIndex()) {
-                            System.out.println("End the question pack");
-                            messagingTemplate.convertAndSend("/game/" + g.getId() + "/end", LocalDateTime.now());
-                            // ამ დროს საერთოდ უნდა ამოიშალოს
-                            g.setPaused(true);
+                        if (g.isLastTheme()) {
+                            endGame(g);
                             return;
                         }
-                        messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/end", theme.getName());
-                        g.setPausedUntil(LocalDateTime.now().plusSeconds(10));
-                        System.out.println("Theme is Finished wait 10 second");
-                        return;
+                        themeEnd(g, theme);
+                    } else {
+                        questionEnd(g, message);
                     }
-                    g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
-                    messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", message);
-                    System.out.println("Question is finished,wait 3 seconds");
                 }
             }
         }
+    }
+
+    private void sentQuestionChunk(GameDTO g, GameDTO.Theme.Question question, String message) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question", message);
+        question.incrementLastIndex();
+    }
+
+    private void endGame(GameDTO g) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/end", LocalDateTime.now());
+        // ამ დროს საერთოდ უნდა ამოიშალოს
+        g.setPaused(true);
+    }
+
+    private void questionEnd(GameDTO g, String message) {
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", message);
+    }
+
+    private void themeEnd(GameDTO g, GameDTO.Theme theme) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/end", theme.getName());
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(10));
+    }
+
+    private void questionStart(GameDTO g, GameDTO.Theme.Question question) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/start", question.getCost());
+        question.setCostSent(true);
+        g.setCorrectAnswer(question.getAnswer());
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(3));
+    }
+
+    private void startTheme(GameDTO g, GameDTO.Theme theme) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/start", theme.getName());
+        theme.setNameSent(true);
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
     }
 }

@@ -38,7 +38,6 @@ public class GameController {
 
     @ResponseBody
     @GetMapping("/game/{id}")
-    //TODO check if has permission
     public Game get(@PathVariable Long id) {
         return gameService.get(id);
     }
@@ -61,7 +60,27 @@ public class GameController {
     public void start(@PathVariable Long id) {
         gameService.start(id);
         messagingTemplate.convertAndSend("/game/" + id + "/start", LocalDate.now());
-        //TODO თამაშის დაწყების შემდეგ ერთწუთიანი მზადყოფნა
+    }
+
+    @ResponseBody
+    @PostMapping("/game/{id}/answer")
+    public void answer(@PathVariable Long id) {
+        gameService.answer(id);
+        messagingTemplate.convertAndSend("/game/" + id + "/answer", LocalDate.now());
+    }
+
+    @ResponseBody
+    @PostMapping("/game/{id}/pause")
+    public void pause(@PathVariable Long id) {
+        gameService.pause(id);
+        messagingTemplate.convertAndSend("/game/" + id + "/pause", LocalDate.now());
+    }
+
+    @ResponseBody
+    @PostMapping("/game/{id}/resume")
+    public void resume(@PathVariable Long id) {
+        gameService.resume(id);
+        messagingTemplate.convertAndSend("/game/" + id + "/resume", LocalDate.now());
     }
 
     @ResponseBody
