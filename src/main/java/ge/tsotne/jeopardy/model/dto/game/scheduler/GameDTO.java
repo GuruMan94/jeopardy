@@ -23,6 +23,7 @@ public class GameDTO {
     private long showManUserId;
     private List<Player> players = new ArrayList<>();
     private List<Long> answeredUserIds = new ArrayList<>();
+    private boolean isFinished = false;
 
     public void incrementThemeIndex() {
         lastThemeIndex++;

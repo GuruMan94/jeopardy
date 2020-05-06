@@ -230,6 +230,9 @@ public class GameServiceImpl implements GameService {
             System.out.println("...");
             return;
         }
+        if (g.isFinished()) {
+            endGame(g);
+        }
         GameDTO.Theme theme = g.getCurrentTheme();
         if (!theme.isNameSent()) {
             startTheme(g, theme);
@@ -245,10 +248,11 @@ public class GameServiceImpl implements GameService {
                     if (theme.isLastQuestion()) {
                         g.incrementThemeIndex();
                         if (g.isLastTheme()) {
-                            endGame(g);
-                            return;
+                            g.setFinished(true);
+                            questionEnd(g, message);
+                        } else {
+                            themeEnd(g, theme);
                         }
-                        themeEnd(g, theme);
                     } else {
                         questionEnd(g, message);
                     }
