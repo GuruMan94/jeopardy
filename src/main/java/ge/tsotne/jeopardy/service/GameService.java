@@ -32,4 +32,6 @@ public interface GameService {
     void resume(long id);
 
     void answer(long id);
+
+    void checkAnswer(long id, Boolean correct);
 }

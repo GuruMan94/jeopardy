@@ -1,4 +1,4 @@
-package ge.tsotne.jeopardy.model.dto;
+package ge.tsotne.jeopardy.model.dto.question;
 
 import ge.tsotne.jeopardy.model.validation.ValidationWithId;
 import ge.tsotne.jeopardy.model.validation.ValidationWithoutId;
@@ -10,8 +10,8 @@ import javax.validation.constraints.Size;
 import java.util.List;
 
 @Data
-public class QuestionPackDTO {
-    @NotNull(groups = ValidationWithId.class)
+public class ThemeDTO {
+    @NotNull(groups = {ValidationWithId.class})
     private Long id;
 
     @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
@@ -19,10 +19,8 @@ public class QuestionPackDTO {
 
     private String description;
 
-    private String author;
-
     @Valid
-    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
     @Size(min = 1, groups = {ValidationWithoutId.class, ValidationWithId.class})
-    private List<ThemeDTO> themes;
+    @NotNull(groups = {ValidationWithoutId.class, ValidationWithId.class})
+    private List<QuestionDTO> questions;
 }

@@ -10,6 +10,7 @@ import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
 import ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO;
 import ge.tsotne.jeopardy.repository.GameRepository;
 import ge.tsotne.jeopardy.repository.PlayerRepository;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -20,6 +21,7 @@ import org.springframework.util.StringUtils;
 import javax.persistence.criteria.Predicate;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,10 +30,10 @@ import static ge.tsotne.jeopardy.model.Player.Role.SHOWMAN;
 
 @Service
 public class GameServiceImpl implements GameService {
-    private GameRepository gameRepository;
-    private QuestionPackService questionPackService;
-    private PlayerRepository playerRepository;
-    private SimpMessagingTemplate messagingTemplate;
+    private final GameRepository gameRepository;
+    private final QuestionPackService questionPackService;
+    private final PlayerRepository playerRepository;
+    private final SimpMessagingTemplate messagingTemplate;
     private static final ConcurrentHashMap<Long, GameDTO> activeGames = new ConcurrentHashMap<>();
 
     public GameServiceImpl(GameRepository gameRepository,
@@ -128,9 +130,25 @@ public class GameServiceImpl implements GameService {
         }
         GameDTO game = activeGames.get(id);
         long userId = Utils.getCurrentUserIdNotNull();
-        if (game.isPaused()) return;
+        if (game.isPaused() && !game.canAnswer(userId)) return;
+        game.setPaused(true);
+        game.getAnsweredUsers().add(new GameDTO.User(userId, true));
+    }
 
-
+    @Override
+    public void checkAnswer(long id, Boolean correct) {
+        if (isNotShowMan(id)) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
+        GameDTO game = activeGames.get(id);
+        int point = game.getQuestionInfo().getCost();
+        if (!BooleanUtils.isTrue(correct)) {
+            point *= -1;
+        }
+        GameDTO.Player player = game.getPlayerByUserId(Utils.getCurrentUserIdNotNull());
+        player.addPoint(point);
+        game.setPausedUntil(LocalDateTime.now().plusSeconds(2));
+        //TODO ლოგირება
     }
 
     @Override
@@ -243,7 +261,9 @@ public class GameServiceImpl implements GameService {
             } else {
                 String message = question.getCurrentChunk();
                 sentQuestionChunk(g, question, message);
-                if (question.isLastChunk()) {
+                if (question.isFirstChunk()) {
+                    prepareForAnswer(g, question);
+                } else if (question.isLastChunk()) {
                     theme.incrementQuestionIndex();
                     if (theme.isLastQuestion()) {
                         g.incrementThemeIndex();
@@ -259,6 +279,12 @@ public class GameServiceImpl implements GameService {
                 }
             }
         }
+    }
+
+    private void prepareForAnswer(GameDTO g, GameDTO.Theme.Question question) {
+        g.setPaused(false);
+        g.setAnsweredUsers(new ArrayList<>());
+        g.setQuestionInfo(new GameDTO.QuestionInfo(question.getAnswer(), question.getCost()));
     }
 
     private void sentQuestionChunk(GameDTO g, GameDTO.Theme.Question question, String message) {
@@ -284,7 +310,6 @@ public class GameServiceImpl implements GameService {
     private void questionStart(GameDTO g, GameDTO.Theme.Question question) {
         messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/start", question.getCost());
         question.setCostSent(true);
-        g.setCorrectAnswer(question.getAnswer());
         g.setPausedUntil(LocalDateTime.now().plusSeconds(3));
     }
 

@@ -1,7 +1,7 @@
 package ge.tsotne.jeopardy.model.dto.game.scheduler;
 
 import ge.tsotne.jeopardy.model.Game;
-import lombok.Data;
+import lombok.*;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -18,11 +18,11 @@ public class GameDTO {
     private List<Theme> themes = new ArrayList<>();
     private int themeCount = 0;
     private int lastThemeIndex = 0;
-    private String correctAnswer;
-    private boolean canAnswer = false;
+    private QuestionInfo questionInfo;
+    @Getter(AccessLevel.NONE)
     private long showManUserId;
     private List<Player> players = new ArrayList<>();
-    private List<Long> answeredUserIds = new ArrayList<>();
+    private List<User> answeredUsers = new ArrayList<>();
     private boolean isFinished = false;
 
     public void incrementThemeIndex() {
@@ -33,8 +33,22 @@ public class GameDTO {
         return this.getThemeCount() == this.getLastThemeIndex();
     }
 
+    public boolean canAnswer(long userId) {
+        return !hasAnswered(userId);
+    }
+
+    private boolean hasAnswered(long userId) {
+        return answeredUsers.stream().anyMatch(u -> u.id == userId);
+    }
+
     public Theme getCurrentTheme() {
         return this.getThemes().get(this.getLastThemeIndex());
+    }
+
+    public Player getPlayerByUserId(long userId) {
+        return this.players.stream()
+                .filter(p -> p.playerUserId == userId)
+                .findFirst().orElse(null);
     }
 
     @Data
@@ -82,6 +96,10 @@ public class GameDTO {
                 return this.getText().length == this.getLastIndex();
             }
 
+            public boolean isFirstChunk() {
+                return 0 == this.getLastIndex();
+            }
+
             public String getCurrentChunk() {
                 return this.getText()[this.getLastIndex()];
             }
@@ -107,6 +125,26 @@ public class GameDTO {
         public Player(ge.tsotne.jeopardy.model.Player player) {
             this.playerUserId = player.getUserId();
         }
+
+        public void addPoint(int cost) {
+            this.point += cost;
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class User {
+        private long id;
+        private boolean isAnswering;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class QuestionInfo {
+        private String answer;
+        private int cost;
     }
 
     public GameDTO(Game game) {

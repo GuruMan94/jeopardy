@@ -1,8 +1,8 @@
 package ge.tsotne.jeopardy.controller;
 
 import ge.tsotne.jeopardy.model.QuestionPack;
-import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
-import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
+import ge.tsotne.jeopardy.model.dto.question.QuestionPackDTO;
+import ge.tsotne.jeopardy.model.dto.question.QuestionSearchParams;
 import ge.tsotne.jeopardy.model.validation.ValidationWithId;
 import ge.tsotne.jeopardy.model.validation.ValidationWithoutId;
 import ge.tsotne.jeopardy.service.QuestionPackService;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 public class QuestionPackController {
-    private QuestionPackService questionPackService;
+    private final QuestionPackService questionPackService;
 
     public QuestionPackController(QuestionPackService questionPackService) {
         this.questionPackService = questionPackService;

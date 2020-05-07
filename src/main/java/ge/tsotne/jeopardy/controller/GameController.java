@@ -1,6 +1,7 @@
 package ge.tsotne.jeopardy.controller;
 
 import ge.tsotne.jeopardy.model.Game;
+import ge.tsotne.jeopardy.model.dto.game.CheckAnswerDTO;
 import ge.tsotne.jeopardy.model.dto.game.EnterGameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
@@ -15,8 +16,8 @@ import java.util.List;
 
 @Controller
 public class GameController {
-    private GameService gameService;
-    private SimpMessagingTemplate messagingTemplate;
+    private final GameService gameService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public GameController(GameService gameService,
                           SimpMessagingTemplate messagingTemplate) {
@@ -67,6 +68,13 @@ public class GameController {
     public void answer(@PathVariable Long id) {
         gameService.answer(id);
         messagingTemplate.convertAndSend("/game/" + id + "/answer", LocalDate.now());
+    }
+
+    @ResponseBody
+    @PostMapping("/game/{id}/answer/check")
+    public void checkAnswer(@PathVariable Long id, @RequestBody CheckAnswerDTO dto) {
+        gameService.checkAnswer(id, dto.getCorrect());
+        messagingTemplate.convertAndSend("/game/" + id + "/answer/check", LocalDate.now());
     }
 
     @ResponseBody

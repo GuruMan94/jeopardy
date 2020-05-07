@@ -1,7 +1,7 @@
 package ge.tsotne.jeopardy.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import ge.tsotne.jeopardy.model.dto.QuestionDTO;
+import ge.tsotne.jeopardy.model.dto.question.QuestionDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

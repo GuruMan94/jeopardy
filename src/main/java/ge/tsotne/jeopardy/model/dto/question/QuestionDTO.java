@@ -1,4 +1,4 @@
-package ge.tsotne.jeopardy.model.dto;
+package ge.tsotne.jeopardy.model.dto.question;
 
 import ge.tsotne.jeopardy.model.validation.ValidationWithId;
 import ge.tsotne.jeopardy.model.validation.ValidationWithoutId;

@@ -2,8 +2,8 @@ package ge.tsotne.jeopardy.service;
 
 import ge.tsotne.jeopardy.Utils;
 import ge.tsotne.jeopardy.model.QuestionPack;
-import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
-import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
+import ge.tsotne.jeopardy.model.dto.question.QuestionPackDTO;
+import ge.tsotne.jeopardy.model.dto.question.QuestionSearchParams;
 import ge.tsotne.jeopardy.repository.QuestionPackRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,7 +14,7 @@ import javax.validation.constraints.NotNull;
 
 @Service
 public class QuestionPackServiceImpl implements QuestionPackService {
-    private QuestionPackRepository questionPackRepository;
+    private final QuestionPackRepository questionPackRepository;
 
     public QuestionPackServiceImpl(QuestionPackRepository questionPackRepository) {
         this.questionPackRepository = questionPackRepository;

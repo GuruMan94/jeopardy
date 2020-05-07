@@ -1,6 +1,6 @@
 package ge.tsotne.jeopardy.model;
 
-import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
+import ge.tsotne.jeopardy.model.dto.question.QuestionPackDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

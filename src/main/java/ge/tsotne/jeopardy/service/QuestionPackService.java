@@ -1,8 +1,8 @@
 package ge.tsotne.jeopardy.service;
 
 import ge.tsotne.jeopardy.model.QuestionPack;
-import ge.tsotne.jeopardy.model.dto.QuestionPackDTO;
-import ge.tsotne.jeopardy.model.dto.QuestionSearchParams;
+import ge.tsotne.jeopardy.model.dto.question.QuestionPackDTO;
+import ge.tsotne.jeopardy.model.dto.question.QuestionSearchParams;
 import org.springframework.data.domain.Page;
 
 import javax.validation.constraints.NotNull;
