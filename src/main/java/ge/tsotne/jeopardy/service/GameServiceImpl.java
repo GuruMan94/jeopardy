@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 import javax.persistence.criteria.Predicate;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,12 +143,23 @@ public class GameServiceImpl implements GameService {
         }
         GameDTO game = activeGames.get(id);
         int point = game.getQuestionInfo().getCost();
-        if (!BooleanUtils.isTrue(correct)) {
+        boolean isCorrect = BooleanUtils.isTrue(correct);
+        if (!isCorrect) {
             point *= -1;
         }
         GameDTO.Player player = game.getPlayerByUserId(Utils.getCurrentUserIdNotNull());
         player.addPoint(point);
-        game.setPausedUntil(LocalDateTime.now().plusSeconds(2));
+        if (isCorrect) {
+            GameDTO.Theme theme = game.getCurrentTheme();
+            if (theme != null) {
+                GameDTO.Theme.Question question = theme.getCurrentQuestion();
+                if (question != null) {
+                    question.setLastIndex(question.getText().length);
+                }
+            }
+        } else {
+            game.setPausedUntil(LocalDateTime.now().plusSeconds(5));
+        }
         //TODO ლოგირება
     }
 
@@ -158,6 +170,8 @@ public class GameServiceImpl implements GameService {
         }
         GameDTO game = activeGames.get(id);
         if (game == null) return;
+        long seconds = LocalDateTime.now().until(game.getPausedUntil(), ChronoUnit.SECONDS);
+        game.setSavedPausedSeconds(Math.max(seconds, 0));
         game.setPaused(true);
     }
 
@@ -169,6 +183,7 @@ public class GameServiceImpl implements GameService {
         GameDTO game = activeGames.get(id);
         if (game == null) return;
         game.setPaused(false);
+        game.setPausedUntil(LocalDateTime.now().plusSeconds(game.getSavedPausedSeconds()));
     }
 
     public ConcurrentHashMap<Long, GameDTO> getActiveGames() {
@@ -223,7 +238,6 @@ public class GameServiceImpl implements GameService {
         if (StringUtils.isEmpty(game.getPassword())
                 || StringUtils.isEmpty(dto.getPassword())
                 || !game.getPassword().equals(dto.getPassword())) {
-            //TODO რაღაც რაოდენობის ცდის შემდეგ დაებლოკოს 5 წუთით მაგალითად
             throw new RuntimeException("INCORRECT_PASSWORD");
         }
     }
@@ -248,18 +262,28 @@ public class GameServiceImpl implements GameService {
             System.out.println("...");
             return;
         }
-        if (g.isFinished()) {
-            endGame(g);
-        }
         GameDTO.Theme theme = g.getCurrentTheme();
+        if (theme == null || g.isFinished()) {
+            endGame(g);
+            return;
+        }
         if (!theme.isNameSent()) {
             startTheme(g, theme);
         } else {
             GameDTO.Theme.Question question = theme.getCurrentQuestion();
+            if (question == null) {
+                g.incrementThemeIndex();
+                return;
+            }
             if (!question.isCostSent()) {
                 questionStart(g, question);
             } else {
                 String message = question.getCurrentChunk();
+                if (message == null) {
+                    theme.incrementQuestionIndex();
+                    questionEnd(g, question);
+                    return;
+                }
                 sentQuestionChunk(g, question, message);
                 if (question.isFirstChunk()) {
                     prepareForAnswer(g, question);
@@ -269,12 +293,12 @@ public class GameServiceImpl implements GameService {
                         g.incrementThemeIndex();
                         if (g.isLastTheme()) {
                             g.setFinished(true);
-                            questionEnd(g, message);
+                            questionEnd(g, question);
                         } else {
                             themeEnd(g, theme);
                         }
                     } else {
-                        questionEnd(g, message);
+                        questionEnd(g, question);
                     }
                 }
             }
@@ -297,9 +321,9 @@ public class GameServiceImpl implements GameService {
         activeGames.remove(g.getId());
     }
 
-    private void questionEnd(GameDTO g, String message) {
+    private void questionEnd(GameDTO g, GameDTO.Theme.Question question) {
         g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
-        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", message);
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", question.getCost());
     }
 
     private void themeEnd(GameDTO g, GameDTO.Theme theme) {

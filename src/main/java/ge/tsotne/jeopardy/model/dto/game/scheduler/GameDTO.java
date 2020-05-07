@@ -15,6 +15,7 @@ public class GameDTO {
     private long id;
     private boolean paused = false;
     private LocalDateTime pausedUntil = LocalDateTime.now();
+    private long savedPausedSeconds = 0;
     private List<Theme> themes = new ArrayList<>();
     private int themeCount = 0;
     private int lastThemeIndex = 0;
@@ -42,6 +43,7 @@ public class GameDTO {
     }
 
     public Theme getCurrentTheme() {
+        if (lastThemeIndex <= this.getThemes().size()) return null;
         return this.getThemes().get(this.getLastThemeIndex());
     }
 
@@ -69,6 +71,7 @@ public class GameDTO {
         }
 
         public Question getCurrentQuestion() {
+            if (lastQuestionIndex == this.getQuestions().size()) return null;
             return this.getQuestions().get(this.getLastQuestionIndex());
         }
 
@@ -101,6 +104,7 @@ public class GameDTO {
             }
 
             public String getCurrentChunk() {
+                if (this.lastIndex == this.getText().length) return null;
                 return this.getText()[this.getLastIndex()];
             }
         }
@@ -120,7 +124,6 @@ public class GameDTO {
     public static class Player {
         private long playerUserId;
         private int point = 0;
-        private int placeId;
 
         public Player(ge.tsotne.jeopardy.model.Player player) {
             this.playerUserId = player.getUserId();
