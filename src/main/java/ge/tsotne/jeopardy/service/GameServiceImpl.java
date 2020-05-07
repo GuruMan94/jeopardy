@@ -108,7 +108,7 @@ public class GameServiceImpl implements GameService {
         if (game.getStatus() != Game.Status.NEW) {
             throw new RuntimeException("CANT_START_GAME");
         }
-        game.start();
+        //game.start();
         gameRepository.save(game);
         addToActiveGames(game);
     }
@@ -169,7 +169,9 @@ public class GameServiceImpl implements GameService {
             throw new RuntimeException("NOT_ALLOWED");
         }
         GameDTO game = activeGames.get(id);
-        if (game == null) return;
+        if (game == null || game.isPaused()) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
         long seconds = LocalDateTime.now().until(game.getPausedUntil(), ChronoUnit.SECONDS);
         game.setSavedPausedSeconds(Math.max(seconds, 0));
         game.setPaused(true);
@@ -181,7 +183,9 @@ public class GameServiceImpl implements GameService {
             throw new RuntimeException("NOT_ALLOWED");
         }
         GameDTO game = activeGames.get(id);
-        if (game == null) return;
+        if (game == null || !game.isPaused()) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
         game.setPaused(false);
         game.setPausedUntil(LocalDateTime.now().plusSeconds(game.getSavedPausedSeconds()));
     }

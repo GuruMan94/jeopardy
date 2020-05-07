@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 @EnableScheduling
 public class GameScheduler {
-    private GameService gameService;
+    private final GameService gameService;
 
     public GameScheduler(GameService gameService) {
         this.gameService = gameService;
@@ -17,7 +17,7 @@ public class GameScheduler {
     public void prepareQuestions() {
         gameService.getActiveGames()
                 .values()
-                .forEach(g -> gameService.sendQuestionChunk(g));
+                .forEach(gameService::sendQuestionChunk);
     }
 
     // გვაქვს 2 შედულერი რომელიც ეშვება ყოველ წამს.

@@ -43,7 +43,7 @@ public class GameDTO {
     }
 
     public Theme getCurrentTheme() {
-        if (lastThemeIndex <= this.getThemes().size()) return null;
+        if (lastThemeIndex >= this.getThemes().size()) return null;
         return this.getThemes().get(this.getLastThemeIndex());
     }
 
@@ -71,7 +71,7 @@ public class GameDTO {
         }
 
         public Question getCurrentQuestion() {
-            if (lastQuestionIndex == this.getQuestions().size()) return null;
+            if (lastQuestionIndex >= this.getQuestions().size()) return null;
             return this.getQuestions().get(this.getLastQuestionIndex());
         }
 
@@ -104,7 +104,7 @@ public class GameDTO {
             }
 
             public String getCurrentChunk() {
-                if (this.lastIndex == this.getText().length) return null;
+                if (this.lastIndex >= this.getText().length) return null;
                 return this.getText()[this.getLastIndex()];
             }
         }
@@ -168,5 +168,6 @@ public class GameDTO {
                 .stream()
                 .filter(p -> p.getRole() == ge.tsotne.jeopardy.model.Player.Role.PLAYER)
                 .map(Player::new).collect(Collectors.toList());
+        this.setPausedUntil(LocalDateTime.now().plusSeconds(2));
     }
 }

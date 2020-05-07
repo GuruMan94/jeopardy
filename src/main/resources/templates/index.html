@@ -5,30 +5,38 @@
     <title>Title</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script>
 
     </script>
 </head>
 <body>
-<button onclick="sendMessage()">Send message</button>
-<button onclick="sendPrivateMessage()">Send private message</button>
-<button onclick="addUser()">Add User</button>
-<br/>
-<br/>
-
+<br>
 <canvas id="myCanvas" width="600px" height="300px" style="border: 2px solid black"></canvas>
+<br>
+<br>
+<button onclick="startGame()">Start Game</button>
+<button onclick="pauseGame()">Pause Game</button>
+<button onclick="resumeGame()">Resume Game</button>
+<button onclick="answer()">Answer</button>
+
+<br>
+<br>
+
+<div id="pausedText" hidden>
+    <h1 style="color: red">Paused ... </h1>
+</div>
 
 <script>
     const ws = new SockJS("/message");
     const stompClient = Stomp.over(ws);
+    const mainUrl = "http://localhost:8080/"
     let question;
 
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext('2d');
 
     stompClient.connect({}, function (frame) {
-        console.log("Connected ...");
-
         stompClient.subscribe("/game/4/enter", function (message) {
             console.log("Add game: ", message);
         });
@@ -68,6 +76,14 @@
             console.log("Error: ", message);
         });
 
+        stompClient.subscribe("/game/4/pause", function () {
+            $("#pausedText").show();
+        });
+
+        stompClient.subscribe("/game/4/resume", function () {
+            $("#pausedText").hide();
+        });
+
     }, function (error) {
         console.log("Error:", error);
     });
@@ -76,12 +92,35 @@
         stompClient.send("/app/questions", {}, "some message")
     }
 
-    function sendPrivateMessage() {
-        stompClient.send("/app/personal/questions", {}, "some private message")
+    function startGame() {
+        $.post(mainUrl + "game/4/start", {}, function (data, status) {
+            if (status === 200) {
+                console.log("Game is started ... ");
+            }
+            console.log(data);
+        })
     }
 
-    function addUser() {
-        stompClient.send("/app/game.addUser", {}, "add user")
+    function pauseGame() {
+        $.post(mainUrl + "game/4/pause", {}, function (data, status) {
+            if (status === 200) {
+                console.log("Game is started ... ");
+            }
+            console.log(data);
+        })
+    }
+
+    function resumeGame() {
+        $.post(mainUrl + "game/4/resume", {}, function (data, status) {
+            if (status === 200) {
+                console.log("Game is started ... ");
+            }
+            console.log(data);
+        })
+    }
+
+    function answer() {
+
     }
 
     function fillCanvasText(text, ctx) {
