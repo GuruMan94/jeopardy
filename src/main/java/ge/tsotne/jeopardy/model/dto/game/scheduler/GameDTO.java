@@ -1,5 +1,6 @@
 package ge.tsotne.jeopardy.model.dto.game.scheduler;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ge.tsotne.jeopardy.model.Game;
 import lombok.*;
 import org.springframework.util.StringUtils;
@@ -16,10 +17,9 @@ public class GameDTO {
     @Getter(AccessLevel.NONE)
     private boolean canAnswer = false;
     private boolean isFinished = false;
-    private long savedPausedSeconds = 0;
     private int lastThemeIndex = 0;
-    private long showManUserId;
     private QuestionInfo questionInfo;
+    private long savedPausedSeconds = 0;
     private List<Theme> themes = new ArrayList<>();
     private List<Player> players = new ArrayList<>();
     private LocalDateTime pausedUntil = LocalDateTime.now();
@@ -28,8 +28,12 @@ public class GameDTO {
         lastThemeIndex++;
     }
 
-    public boolean isLastTheme() {
-        return this.getThemes().size() == this.getLastThemeIndex();
+    public boolean isFinished() {
+        return this.getThemes().size() == this.getLastThemeIndex() || isFinished;
+    }
+
+    public void clearPauseInterval() {
+        this.pausedUntil = LocalDateTime.now();
     }
 
     public boolean canAnswer(long userId) {
@@ -39,6 +43,13 @@ public class GameDTO {
     public Player getAnsweringPlayer() {
         return players.stream()
                 .filter(u -> u.getAnswerState() == Player.AnswerState.ANSWERING)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public Player getPlayer(long userId) {
+        return players.stream()
+                .filter(u -> u.getUserId() == userId)
                 .findFirst()
                 .orElse(null);
     }
@@ -54,7 +65,6 @@ public class GameDTO {
     }
 
     public Theme getCurrentTheme() {
-        if (lastThemeIndex >= this.getThemes().size()) return null;
         return this.getThemes().get(this.getLastThemeIndex());
     }
 
@@ -74,12 +84,11 @@ public class GameDTO {
             lastQuestionIndex++;
         }
 
-        public boolean isLastQuestion() {
+        public boolean isFinished() {
             return this.getQuestions().size() == this.getLastQuestionIndex();
         }
 
         public Question getCurrentQuestion() {
-            if (lastQuestionIndex >= this.getQuestions().size()) return null;
             return this.getQuestions().get(this.getLastQuestionIndex());
         }
 
@@ -103,7 +112,7 @@ public class GameDTO {
                 lastIndex++;
             }
 
-            public boolean isLastChunk() {
+            public boolean isFinished() {
                 return this.getText().length == this.getLastIndex();
             }
 
@@ -137,6 +146,7 @@ public class GameDTO {
         private int point = 0;
         private AnswerState answerState = AnswerState.NONE;
         private ge.tsotne.jeopardy.model.Player.Role role;
+        @JsonIgnore
         private LocalDateTime startedAnswering;
 
         public Player(ge.tsotne.jeopardy.model.Player player) {

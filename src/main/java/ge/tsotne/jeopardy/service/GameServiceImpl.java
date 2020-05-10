@@ -5,6 +5,7 @@ import ge.tsotne.jeopardy.configuration.UserPrincipal;
 import ge.tsotne.jeopardy.model.Game;
 import ge.tsotne.jeopardy.model.Game_;
 import ge.tsotne.jeopardy.model.Player;
+import ge.tsotne.jeopardy.model.TimeoutConstants;
 import ge.tsotne.jeopardy.model.dto.game.EnterGameDTO;
 import ge.tsotne.jeopardy.model.dto.game.GameSearchDTO;
 import ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO;
@@ -134,12 +135,15 @@ public class GameServiceImpl implements GameService {
         }
         GameDTO game = activeGames.get(id);
         long userId = Utils.getCurrentUserIdNotNull();
-        if (game.canAnswer(userId)) {
+        if (!game.canAnswer(userId)) {
             throw new RuntimeException("CANT_ANSWER");
         }
-        game.setPausedUntil(LocalDateTime.now().plusDays(1));
-        game.setCanAnswer(false);
-        game.getAnsweringPlayer().setAnswerState(GameDTO.Player.AnswerState.ANSWERING);
+        GameDTO.Player player = game.getPlayer(userId);
+        if (player != null) {
+            player.setAnswerState(GameDTO.Player.AnswerState.ANSWERING);
+            game.setPausedUntil(LocalDateTime.now().plusDays(1));
+            game.setCanAnswer(false);
+        }
         messagingTemplate.convertAndSend("/game/" + id + "/answer", LocalDate.now());
     }
 
@@ -155,22 +159,17 @@ public class GameServiceImpl implements GameService {
             point *= -1;
         }
         GameDTO.Player player = game.getAnsweringPlayer();
+        if (player == null) return;
         player.addPoint(point);
         player.setAnswerState(GameDTO.Player.AnswerState.ALREADY_ANSWERED);
-        game.setCanAnswer(true);
-        game.setPausedUntil(LocalDateTime.now());
         if (isCorrect) {
-            GameDTO.Theme theme = game.getCurrentTheme();
-            if (theme != null) {
-                GameDTO.Theme.Question question = theme.getCurrentQuestion();
-                if (question != null) {
-                    question.setLastIndex(question.getText().length);
-                }
-            }
+            endCurrentQuestion(game);
         } else {
-            game.setPausedUntil(LocalDateTime.now().plusSeconds(5));
+            game.setPausedUntil(LocalDateTime.now().plusSeconds(TimeoutConstants.QUESTION_END_TIMEOUT));
         }
         //TODO ლოგირება
+        game.setCanAnswer(true);
+        game.clearPauseInterval();
         messagingTemplate.convertAndSend("/game/" + id + "/answer/check", LocalDate.now());
     }
 
@@ -285,60 +284,60 @@ public class GameServiceImpl implements GameService {
 
     @Async
     @Override
-    public void sendQuestionChunk(GameDTO g) {
-        if (g.isPaused()) {
+    public void sendQuestionChunk(GameDTO game) {
+        if (game.isPaused()) {
             System.out.println("...");
-            return;
-        }
-        GameDTO.Theme theme = g.getCurrentTheme();
-        if (theme == null || g.isFinished()) {
-            endGame(g);
-            return;
-        }
-        if (!theme.isNameSent()) {
-            startTheme(g, theme);
         } else {
-            GameDTO.Theme.Question question = theme.getCurrentQuestion();
-            if (question == null) {
-                g.incrementThemeIndex();
-                return;
-            }
-            if (!question.isCostSent()) {
-                questionStart(g, question);
+            if (game.isFinished()) {
+                endGame(game);
             } else {
-                String message = question.getCurrentChunk();
-                if (message == null) {
-                    theme.incrementQuestionIndex();
-                    questionEnd(g, question);
-                    return;
-                }
-                if (question.isFirstChunk()) {
-                    prepareForAnswer(g, question);
-                }
-                sentQuestionChunk(g, question, message);
-                if (question.isLastChunk()) {
-                    theme.incrementQuestionIndex();
-                    if (theme.isLastQuestion()) {
-                        g.incrementThemeIndex();
-                        if (g.isLastTheme()) {
-                            g.setFinished(true);
-                            questionEnd(g, question);
-                        } else {
-                            themeEnd(g, theme);
-                        }
+                GameDTO.Theme theme = game.getCurrentTheme();
+                if (!theme.isNameSent()) {
+                    startTheme(game, theme);
+                } else {
+                    GameDTO.Theme.Question question = theme.getCurrentQuestion();
+                    if (!question.isCostSent()) {
+                        questionStart(game, question);
                     } else {
-                        questionEnd(g, question);
+                        String message = question.getCurrentChunk();
+                        if (question.isFirstChunk()) {
+                            prepareForAnswer(game, question);
+                        }
+                        sentQuestionChunk(game, question, message);
+                        endQuestion(game, theme, question);
                     }
                 }
             }
         }
+
     }
 
-    private void prepareForAnswer(GameDTO g, GameDTO.Theme.Question question) {
-        g.setCanAnswer(true);
-        g.setPausedUntil(LocalDateTime.now());
-        g.clearAnswers();
-        g.setQuestionInfo(new GameDTO.QuestionInfo(question.getAnswer(), question.getCost()));
+    private void endQuestion(GameDTO game, GameDTO.Theme theme, GameDTO.Theme.Question question) {
+        if (question.isFinished()) {
+            theme.incrementQuestionIndex();
+            if (theme.isFinished()) {
+                game.incrementThemeIndex();
+                if (game.isFinished()) {
+                    game.setFinished(true);
+                    questionEnd(game, question);
+                } else {
+                    themeEnd(game, theme);
+                }
+            } else {
+                questionEnd(game, question);
+            }
+        }
+    }
+
+    private void endCurrentQuestion(GameDTO game) {
+        GameDTO.Theme theme = game.getCurrentTheme();
+        if (theme != null) {
+            GameDTO.Theme.Question question = theme.getCurrentQuestion();
+            if (question != null) {
+                question.setLastIndex(question.getText().length);
+                endQuestion(game, theme, question);
+            }
+        }
     }
 
     private void sentQuestionChunk(GameDTO g, GameDTO.Theme.Question question, String message) {
@@ -346,30 +345,36 @@ public class GameServiceImpl implements GameService {
         question.incrementLastIndex();
     }
 
-    private void endGame(GameDTO g) {
-        messagingTemplate.convertAndSend("/game/" + g.getId() + "/end", LocalDateTime.now());
-        activeGames.remove(g.getId());
-    }
-
-    private void questionEnd(GameDTO g, GameDTO.Theme.Question question) {
-        g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
-        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", question.getCost());
-    }
-
-    private void themeEnd(GameDTO g, GameDTO.Theme theme) {
-        messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/end", theme.getName());
-        g.setPausedUntil(LocalDateTime.now().plusSeconds(10));
+    private void prepareForAnswer(GameDTO g, GameDTO.Theme.Question question) {
+        g.clearAnswers();
+        g.setQuestionInfo(new GameDTO.QuestionInfo(question.getAnswer(), question.getCost()));
+        g.setCanAnswer(true);
     }
 
     private void questionStart(GameDTO g, GameDTO.Theme.Question question) {
         messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/start", question.getCost());
         question.setCostSent(true);
-        g.setPausedUntil(LocalDateTime.now().plusSeconds(3));
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(TimeoutConstants.QUESTION_START_TIMEOUT));
+    }
+
+    private void questionEnd(GameDTO g, GameDTO.Theme.Question question) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/question/end", question.getCost());
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(TimeoutConstants.QUESTION_END_TIMEOUT));
     }
 
     private void startTheme(GameDTO g, GameDTO.Theme theme) {
         messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/start", theme.getName());
         theme.setNameSent(true);
-        g.setPausedUntil(LocalDateTime.now().plusSeconds(5));
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(TimeoutConstants.THEME_START_TIMEOUT));
+    }
+
+    private void themeEnd(GameDTO g, GameDTO.Theme theme) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/theme/end", theme.getName());
+        g.setPausedUntil(LocalDateTime.now().plusSeconds(TimeoutConstants.THEME_END_TIMEOUT));
+    }
+
+    private void endGame(GameDTO g) {
+        messagingTemplate.convertAndSend("/game/" + g.getId() + "/end", LocalDateTime.now());
+        activeGames.remove(g.getId());
     }
 }
