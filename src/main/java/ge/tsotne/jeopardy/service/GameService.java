@@ -36,4 +36,6 @@ public interface GameService {
     void checkAnswer(long id, Boolean correct);
 
     List<ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO.Player> getPoints(Long id);
+
+    ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO.Player getPlayerByUserId(long id, long userId);
 }

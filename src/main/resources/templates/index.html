@@ -41,16 +41,17 @@
     onRender();
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext('2d');
+    let userInfo;
 
     stompClient.connect({}, function (frame) {
         stompClient.subscribe("/game/4/enter", function (message) {
             console.log("Add game: ", message);
-            loadPlayers();
         });
 
         stompClient.subscribe("/game/4/start", function (message) {
             fillCanvasText("Start ...", ctx);
             loadPlayers();
+            loadUserInfo();
         });
 
         stompClient.subscribe("/game/4/end", function (message) {
@@ -93,7 +94,9 @@
         });
 
         stompClient.subscribe("/game/4/answer", function () {
-            checkAnswer(true);
+            if (userInfo.role === 'SHOWMAN') {
+                checkAnswer(true);
+            }
         });
 
         stompClient.subscribe("/game/4/answer/check", function () {
@@ -170,8 +173,14 @@
         })
     }
 
+    function loadUserInfo() {
+        $.get(mainUrl + "game/4/player", function (data, status) {
+            userInfo = data;
+            console.log(userInfo);
+        })
+    }
+
     function onRender() {
-        loadPlayers();
     }
 </script>
 </body>

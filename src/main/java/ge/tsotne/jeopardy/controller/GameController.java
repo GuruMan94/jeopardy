@@ -1,5 +1,6 @@
 package ge.tsotne.jeopardy.controller;
 
+import ge.tsotne.jeopardy.Utils;
 import ge.tsotne.jeopardy.model.Game;
 import ge.tsotne.jeopardy.model.dto.game.CheckAnswerDTO;
 import ge.tsotne.jeopardy.model.dto.game.EnterGameDTO;
@@ -90,6 +91,12 @@ public class GameController {
     @GetMapping("/game/{id}/points")
     public List<ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO.Player> getPoints(@PathVariable Long id) {
         return gameService.getPoints(id);
+    }
+
+    @ResponseBody
+    @GetMapping("/game/{id}/player")
+    public ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO.Player getPlayer(@PathVariable Long id) {
+        return gameService.getPlayerByUserId(id, Utils.getCurrentUserIdNotNull());
     }
 
     //TODO get game results players with points,duration,percentage % of correct answers,answers count

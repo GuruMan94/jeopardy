@@ -124,6 +124,7 @@ public class GameServiceImpl implements GameService {
         }
         Game game = get(id);
         game.end();
+        activeGames.remove(id);
         gameRepository.save(game);
         messagingTemplate.convertAndSend("/game/" + id + "/end", LocalDate.now());
     }
@@ -133,7 +134,7 @@ public class GameServiceImpl implements GameService {
         if (isNotPlayer(id)) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        GameDTO game = activeGames.get(id);
+        GameDTO game = getFromCache(id);
         long userId = Utils.getCurrentUserIdNotNull();
         if (!game.canAnswer(userId)) {
             throw new RuntimeException("CANT_ANSWER");
@@ -152,7 +153,7 @@ public class GameServiceImpl implements GameService {
         if (isNotShowMan(id)) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        GameDTO game = activeGames.get(id);
+        GameDTO game = getFromCache(id);
         int point = game.getQuestionInfo().getCost();
         boolean isCorrect = BooleanUtils.isTrue(correct);
         if (!isCorrect) {
@@ -178,9 +179,16 @@ public class GameServiceImpl implements GameService {
         if (isNotMember(id)) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        GameDTO game = activeGames.get(id);
-        if (game == null) throw new RuntimeException("GAME_NOT_FOUND");
-        return game.getPlayers();
+        return getFromCache(id).getPlayers();
+    }
+
+    @Override
+    public GameDTO.Player getPlayerByUserId(long id, long userId) {
+        GameDTO.Player player = getFromCache(id).getPlayer(userId);
+        if (player == null) {
+            throw new RuntimeException("PLAYER_NOT_FOUND");
+        }
+        return player;
     }
 
     @Override
@@ -188,8 +196,8 @@ public class GameServiceImpl implements GameService {
         if (isNotMember(id)) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        GameDTO game = activeGames.get(id);
-        if (game == null || game.isPaused()) {
+        GameDTO game = getFromCache(id);
+        if (game.isPaused()) {
             throw new RuntimeException("NOT_ALLOWED");
         }
         long seconds = LocalDateTime.now().until(game.getPausedUntil(), ChronoUnit.SECONDS);
@@ -203,7 +211,7 @@ public class GameServiceImpl implements GameService {
         if (isNotMember(id)) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        GameDTO game = activeGames.get(id);
+        GameDTO game = getFromCache(id);
         if (game == null || !game.isPaused()) {
             throw new RuntimeException("NOT_ALLOWED");
         }
@@ -214,6 +222,14 @@ public class GameServiceImpl implements GameService {
 
     public ConcurrentHashMap<Long, GameDTO> getActiveGames() {
         return activeGames;
+    }
+
+    private GameDTO getFromCache(long id) {
+        GameDTO game = activeGames.get(id);
+        if (game == null) {
+            throw new RuntimeException("GAME_NOT_FOUND");
+        }
+        return game;
     }
 
     private boolean isNotShowMan(long gameId) {
