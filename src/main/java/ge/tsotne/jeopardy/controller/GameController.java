@@ -98,10 +98,13 @@ public class GameController {
         messagingTemplate.convertAndSend("/game/" + id + "/end", LocalDate.now());
     }
 
-    //TODO get game results players with points,duration,percentage % of correct answers,answers count
-    // ასევე თამაში პაუზდება მას შემდეგ რაც ვიღაც დააჭერს ღილაკზე ხელს, სანამ პასუხს არ გასცემს ან საპასუხო დრო არ ამოიწურება
-    // თამაშის განახლების შემდეგ პამ პამ პამ თავიდან აითვლება
+    @ResponseBody
+    @GetMapping("/game/{id}/points")
+    public List<ge.tsotne.jeopardy.model.dto.game.scheduler.GameDTO.Player> getPoints(@PathVariable Long id) {
+        return gameService.getPoints(id);
+    }
 
+    //TODO get game results players with points,duration,percentage % of correct answers,answers count
 
     //TODO game history თამაშის ისტორია ვინ რამდენჯერ უპასუხა
 

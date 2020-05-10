@@ -22,7 +22,6 @@ import javax.persistence.criteria.Predicate;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -131,9 +130,12 @@ public class GameServiceImpl implements GameService {
         }
         GameDTO game = activeGames.get(id);
         long userId = Utils.getCurrentUserIdNotNull();
-        if (game.isPaused() && !game.canAnswer(userId)) return;
-        game.setPaused(true);
-        game.getAnsweredUsers().add(new GameDTO.User(userId, true));
+        if (game.canAnswer(userId)) {
+            throw new RuntimeException("CANT_ANSWER");
+        }
+        game.setPausedUntil(LocalDateTime.now().plusDays(1));
+        game.setCanAnswer(false);
+        game.getAnsweringPlayer().setAnswerState(GameDTO.Player.AnswerState.ANSWERING);
     }
 
     @Override
@@ -147,8 +149,11 @@ public class GameServiceImpl implements GameService {
         if (!isCorrect) {
             point *= -1;
         }
-        GameDTO.Player player = game.getPlayerByUserId(Utils.getCurrentUserIdNotNull());
+        GameDTO.Player player = game.getAnsweringPlayer();
         player.addPoint(point);
+        player.setAnswerState(GameDTO.Player.AnswerState.ALREADY_ANSWERED);
+        game.setCanAnswer(true);
+        game.setPausedUntil(LocalDateTime.now());
         if (isCorrect) {
             GameDTO.Theme theme = game.getCurrentTheme();
             if (theme != null) {
@@ -164,6 +169,16 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
+    public List<GameDTO.Player> getPoints(Long id) {
+        if (isNotMember(id)) {
+            throw new RuntimeException("NOT_ALLOWED");
+        }
+        GameDTO game = activeGames.get(id);
+        if (game == null) throw new RuntimeException("GAME_NOT_FOUND");
+        return game.getPlayers();
+    }
+
+    @Override
     public void pause(long id) {
         if (isNotMember(id)) {
             throw new RuntimeException("NOT_ALLOWED");
@@ -174,7 +189,7 @@ public class GameServiceImpl implements GameService {
         }
         long seconds = LocalDateTime.now().until(game.getPausedUntil(), ChronoUnit.SECONDS);
         game.setSavedPausedSeconds(Math.max(seconds, 0));
-        game.setPaused(true);
+        game.setPausedUntil(LocalDateTime.now().plusDays(1));
     }
 
     @Override
@@ -186,7 +201,7 @@ public class GameServiceImpl implements GameService {
         if (game == null || !game.isPaused()) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        game.setPaused(false);
+        game.setPausedUntil(LocalDateTime.now());
         game.setPausedUntil(LocalDateTime.now().plusSeconds(game.getSavedPausedSeconds()));
     }
 
@@ -261,8 +276,9 @@ public class GameServiceImpl implements GameService {
     }
 
     @Async
+    @Override
     public void sendQuestionChunk(GameDTO g) {
-        if (g.isPaused() || LocalDateTime.now().compareTo(g.getPausedUntil()) < 0) {
+        if (g.isPaused()) {
             System.out.println("...");
             return;
         }
@@ -288,10 +304,11 @@ public class GameServiceImpl implements GameService {
                     questionEnd(g, question);
                     return;
                 }
-                sentQuestionChunk(g, question, message);
                 if (question.isFirstChunk()) {
                     prepareForAnswer(g, question);
-                } else if (question.isLastChunk()) {
+                }
+                sentQuestionChunk(g, question, message);
+                if (question.isLastChunk()) {
                     theme.incrementQuestionIndex();
                     if (theme.isLastQuestion()) {
                         g.incrementThemeIndex();
@@ -310,8 +327,9 @@ public class GameServiceImpl implements GameService {
     }
 
     private void prepareForAnswer(GameDTO g, GameDTO.Theme.Question question) {
-        g.setPaused(false);
-        g.setAnsweredUsers(new ArrayList<>());
+        g.setCanAnswer(true);
+        g.setPausedUntil(LocalDateTime.now());
+        g.clearAnswers();
         g.setQuestionInfo(new GameDTO.QuestionInfo(question.getAnswer(), question.getCost()));
     }
 

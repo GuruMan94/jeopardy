@@ -23,26 +23,34 @@
 <br>
 <br>
 
+<h3>Players:</h3>
+<ul id="playersList">
+
+</ul>
+
 <div id="pausedText" hidden>
     <h1 style="color: red">Paused ... </h1>
 </div>
+
 
 <script>
     const ws = new SockJS("/message");
     const stompClient = Stomp.over(ws);
     const mainUrl = "http://localhost:8080/"
-    let question;
-
+    let question = "";
+    onRender();
     const canvas = document.getElementById("myCanvas");
     const ctx = canvas.getContext('2d');
 
     stompClient.connect({}, function (frame) {
         stompClient.subscribe("/game/4/enter", function (message) {
             console.log("Add game: ", message);
+            loadPlayers();
         });
 
         stompClient.subscribe("/game/4/start", function (message) {
             fillCanvasText("Start ...", ctx);
+            loadPlayers();
         });
 
         stompClient.subscribe("/game/4/end", function (message) {
@@ -84,6 +92,14 @@
             $("#pausedText").hide();
         });
 
+        stompClient.subscribe("/game/4/answer", function () {
+            checkAnswer(true);
+        });
+
+        stompClient.subscribe("/game/4/answer/check", function () {
+            loadPlayers();
+        });
+
     }, function (error) {
         console.log("Error:", error);
     });
@@ -103,24 +119,30 @@
 
     function pauseGame() {
         $.post(mainUrl + "game/4/pause", {}, function (data, status) {
-            if (status === 200) {
-                console.log("Game is started ... ");
-            }
             console.log(data);
         })
     }
 
     function resumeGame() {
         $.post(mainUrl + "game/4/resume", {}, function (data, status) {
-            if (status === 200) {
-                console.log("Game is started ... ");
-            }
             console.log(data);
         })
     }
 
     function answer() {
+        $.post(mainUrl + "game/4/answer", {}, function (data, status) {
+            console.log(data);
+        })
+    }
 
+    function checkAnswer(isCorrect) {
+        $.ajax(mainUrl + "game/4/answer/check", {
+            data: JSON.stringify({correct: isCorrect}),
+            contentType: 'application/json',
+            type: 'POST',
+        }, function (data, status) {
+            console.log(data);
+        })
     }
 
     function fillCanvasText(text, ctx) {
@@ -129,6 +151,27 @@
         ctx.fillStyle = 'purple';
         ctx.textAlign = 'center';
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    }
+
+    function loadPlayers() {
+        $.get(mainUrl + "game/4/points", function (data, status) {
+            console.log(data);
+            let players = data;
+            let ul = document.getElementById("playersList")
+            for (let p of players) {
+                let item = document.getElementById(p.userId);
+                if (!item) {
+                    item = document.createElement("li");
+                    item.setAttribute('id', p.userId);
+                }
+                item.innerHTML = `${p.userId} - ${p.point}`;
+                ul.appendChild(item);
+            }
+        })
+    }
+
+    function onRender() {
+        loadPlayers();
     }
 </script>
 </body>

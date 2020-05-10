@@ -7,39 +7,50 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
+// TODO შედულერია დასაწერი რომელიც დაითვლის პასუხისთვის დროს და ასევე თუ არავინ უპასუხა მაგ დროსაც
 @Data
 public class GameDTO {
     private long id;
-    private boolean paused = false;
-    private LocalDateTime pausedUntil = LocalDateTime.now();
-    private long savedPausedSeconds = 0;
-    private List<Theme> themes = new ArrayList<>();
-    private int themeCount = 0;
-    private int lastThemeIndex = 0;
-    private QuestionInfo questionInfo;
     @Getter(AccessLevel.NONE)
-    private long showManUserId;
-    private List<Player> players = new ArrayList<>();
-    private List<User> answeredUsers = new ArrayList<>();
+    private boolean canAnswer = false;
     private boolean isFinished = false;
+    private long savedPausedSeconds = 0;
+    private int lastThemeIndex = 0;
+    private long showManUserId;
+    private QuestionInfo questionInfo;
+    private List<Theme> themes = new ArrayList<>();
+    private List<Player> players = new ArrayList<>();
+    private LocalDateTime pausedUntil = LocalDateTime.now();
 
     public void incrementThemeIndex() {
         lastThemeIndex++;
     }
 
     public boolean isLastTheme() {
-        return this.getThemeCount() == this.getLastThemeIndex();
+        return this.getThemes().size() == this.getLastThemeIndex();
     }
 
     public boolean canAnswer(long userId) {
-        return !hasAnswered(userId);
+        return canAnswer && !hasAnswered(userId);
+    }
+
+    public Player getAnsweringPlayer() {
+        return players.stream()
+                .filter(u -> u.getAnswerState() == Player.AnswerState.ANSWERING)
+                .findFirst()
+                .orElse(null);
     }
 
     private boolean hasAnswered(long userId) {
-        return answeredUsers.stream().anyMatch(u -> u.id == userId);
+        return players.stream()
+                .anyMatch(u -> u.userId == userId
+                        && u.getAnswerState() == Player.AnswerState.ALREADY_ANSWERED);
+    }
+
+    public void clearAnswers() {
+        players.forEach(p -> p.setAnswerState(Player.AnswerState.NONE));
     }
 
     public Theme getCurrentTheme() {
@@ -47,10 +58,8 @@ public class GameDTO {
         return this.getThemes().get(this.getLastThemeIndex());
     }
 
-    public Player getPlayerByUserId(long userId) {
-        return this.players.stream()
-                .filter(p -> p.playerUserId == userId)
-                .findFirst().orElse(null);
+    public boolean isPaused() {
+        return LocalDateTime.now().compareTo(this.pausedUntil) < 0;
     }
 
     @Data
@@ -58,7 +67,6 @@ public class GameDTO {
         private String name;
         private int priority;
         private List<Question> questions = new ArrayList<>();
-        private int questionCount = 0;
         private int lastQuestionIndex = 0;
         private boolean nameSent = false;
 
@@ -67,7 +75,7 @@ public class GameDTO {
         }
 
         public boolean isLastQuestion() {
-            return this.getQuestionCount() == this.getLastQuestionIndex();
+            return this.getQuestions().size() == this.getLastQuestionIndex();
         }
 
         public Question getCurrentQuestion() {
@@ -116,30 +124,29 @@ public class GameDTO {
                     .stream()
                     .map(Question::new)
                     .collect(Collectors.toList());
-            this.questionCount = questions.size();
         }
     }
 
     @Data
     public static class Player {
-        private long playerUserId;
+        public enum AnswerState {
+            NONE, ANSWERING, ALREADY_ANSWERED
+        }
+
+        private long userId;
         private int point = 0;
+        private AnswerState answerState = AnswerState.NONE;
+        private ge.tsotne.jeopardy.model.Player.Role role;
+        private LocalDateTime startedAnswering;
 
         public Player(ge.tsotne.jeopardy.model.Player player) {
-            this.playerUserId = player.getUserId();
+            this.userId = player.getUserId();
+            this.role = player.getRole();
         }
 
         public void addPoint(int cost) {
             this.point += cost;
         }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class User {
-        private long id;
-        private boolean isAnswering;
     }
 
     @Data
@@ -157,16 +164,11 @@ public class GameDTO {
                     .stream()
                     .map(Theme::new)
                     .collect(Collectors.toList());
-            this.themeCount = themes.size();
         }
-        Optional<ge.tsotne.jeopardy.model.Player> showMan = game.getPlayers()
-                .stream()
-                .filter(p -> p.getRole() == ge.tsotne.jeopardy.model.Player.Role.SHOWMAN)
-                .findFirst();
-        showMan.ifPresent(player -> this.showManUserId = player.getUserId());
         this.players = game.getPlayers()
                 .stream()
-                .filter(p -> p.getRole() == ge.tsotne.jeopardy.model.Player.Role.PLAYER)
+                .filter(p -> p.getRole() == ge.tsotne.jeopardy.model.Player.Role.PLAYER
+                        || p.getRole() == ge.tsotne.jeopardy.model.Player.Role.SHOWMAN)
                 .map(Player::new).collect(Collectors.toList());
         this.setPausedUntil(LocalDateTime.now().plusSeconds(2));
     }
