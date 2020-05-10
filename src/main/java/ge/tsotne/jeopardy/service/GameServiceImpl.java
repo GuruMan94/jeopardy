@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import javax.persistence.criteria.Predicate;
 import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -95,6 +96,7 @@ public class GameServiceImpl implements GameService {
         Game game = get(id);
         validate(game, dto);
         savePlayer(id, dto.getRole());
+        messagingTemplate.convertAndSend("/game/" + id + "/enter", LocalDate.now());
     }
 
     @Override
@@ -110,6 +112,7 @@ public class GameServiceImpl implements GameService {
         //game.start();
         gameRepository.save(game);
         addToActiveGames(game);
+        messagingTemplate.convertAndSend("/game/" + id + "/start", LocalDate.now());
     }
 
     @Override
@@ -121,6 +124,7 @@ public class GameServiceImpl implements GameService {
         Game game = get(id);
         game.end();
         gameRepository.save(game);
+        messagingTemplate.convertAndSend("/game/" + id + "/end", LocalDate.now());
     }
 
     @Override
@@ -136,6 +140,7 @@ public class GameServiceImpl implements GameService {
         game.setPausedUntil(LocalDateTime.now().plusDays(1));
         game.setCanAnswer(false);
         game.getAnsweringPlayer().setAnswerState(GameDTO.Player.AnswerState.ANSWERING);
+        messagingTemplate.convertAndSend("/game/" + id + "/answer", LocalDate.now());
     }
 
     @Override
@@ -166,6 +171,7 @@ public class GameServiceImpl implements GameService {
             game.setPausedUntil(LocalDateTime.now().plusSeconds(5));
         }
         //TODO ლოგირება
+        messagingTemplate.convertAndSend("/game/" + id + "/answer/check", LocalDate.now());
     }
 
     @Override
@@ -190,6 +196,7 @@ public class GameServiceImpl implements GameService {
         long seconds = LocalDateTime.now().until(game.getPausedUntil(), ChronoUnit.SECONDS);
         game.setSavedPausedSeconds(Math.max(seconds, 0));
         game.setPausedUntil(LocalDateTime.now().plusDays(1));
+        messagingTemplate.convertAndSend("/game/" + id + "/pause", LocalDate.now());
     }
 
     @Override
@@ -203,6 +210,7 @@ public class GameServiceImpl implements GameService {
         }
         game.setPausedUntil(LocalDateTime.now());
         game.setPausedUntil(LocalDateTime.now().plusSeconds(game.getSavedPausedSeconds()));
+        messagingTemplate.convertAndSend("/game/" + id + "/resume", LocalDate.now());
     }
 
     public ConcurrentHashMap<Long, GameDTO> getActiveGames() {
