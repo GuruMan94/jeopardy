@@ -2,10 +2,12 @@ package ge.tsotne.jeopardy.model.dto.game.scheduler;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ge.tsotne.jeopardy.model.Game;
+import ge.tsotne.jeopardy.model.TimeoutConstants;
 import lombok.*;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +18,7 @@ public class GameDTO {
     private long id;
     @Getter(AccessLevel.NONE)
     private boolean canAnswer = false;
+    private LocalDateTime answerStartDate;
     private boolean isFinished = false;
     private int lastThemeIndex = 0;
     private QuestionInfo questionInfo;
@@ -70,6 +73,11 @@ public class GameDTO {
 
     public boolean isPaused() {
         return LocalDateTime.now().compareTo(this.pausedUntil) < 0;
+    }
+
+    public boolean answeringTimeIsEnded() {
+        return answerStartDate != null
+                && this.answerStartDate.until(LocalDateTime.now(), ChronoUnit.SECONDS) > TimeoutConstants.ANSWER_DURATION;
     }
 
     @Data

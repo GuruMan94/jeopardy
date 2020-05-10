@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static ge.tsotne.jeopardy.model.Player.Role.PLAYER;
 import static ge.tsotne.jeopardy.model.Player.Role.SHOWMAN;
+import static ge.tsotne.jeopardy.model.TimeoutConstants.ANSWER_DURATION;
 
 @Service
 public class GameServiceImpl implements GameService {
@@ -143,6 +144,7 @@ public class GameServiceImpl implements GameService {
         if (player != null) {
             player.setAnswerState(GameDTO.Player.AnswerState.ANSWERING);
             game.setPausedUntil(LocalDateTime.now().plusDays(1));
+            game.setAnswerStartDate(LocalDateTime.now().plusSeconds(ANSWER_DURATION));
             game.setCanAnswer(false);
         }
         messagingTemplate.convertAndSend("/game/" + id + "/answer", LocalDate.now());
@@ -153,7 +155,10 @@ public class GameServiceImpl implements GameService {
         if (isNotShowMan(id)) {
             throw new RuntimeException("NOT_ALLOWED");
         }
-        GameDTO game = getFromCache(id);
+        checkAnswer(getFromCache(id), correct);
+    }
+
+    private void checkAnswer(@NotNull GameDTO game, Boolean correct) {
         int point = game.getQuestionInfo().getCost();
         boolean isCorrect = BooleanUtils.isTrue(correct);
         if (!isCorrect) {
@@ -163,6 +168,7 @@ public class GameServiceImpl implements GameService {
         if (player == null) return;
         player.addPoint(point);
         player.setAnswerState(GameDTO.Player.AnswerState.ALREADY_ANSWERED);
+        messagingTemplate.convertAndSend("/game/" + game.getId() + "/answer/check", LocalDate.now());
         if (isCorrect) {
             endCurrentQuestion(game);
         } else {
@@ -170,8 +176,8 @@ public class GameServiceImpl implements GameService {
         }
         //TODO ლოგირება
         game.setCanAnswer(true);
+        game.setAnswerStartDate(null);
         game.clearPauseInterval();
-        messagingTemplate.convertAndSend("/game/" + id + "/answer/check", LocalDate.now());
     }
 
     @Override
@@ -212,7 +218,7 @@ public class GameServiceImpl implements GameService {
             throw new RuntimeException("NOT_ALLOWED");
         }
         GameDTO game = getFromCache(id);
-        if (game == null || !game.isPaused()) {
+        if (!game.isPaused()) {
             throw new RuntimeException("NOT_ALLOWED");
         }
         game.setPausedUntil(LocalDateTime.now());
@@ -302,6 +308,9 @@ public class GameServiceImpl implements GameService {
     @Override
     public void sendQuestionChunk(GameDTO game) {
         if (game.isPaused()) {
+            if (game.answeringTimeIsEnded()) {
+                checkAnswer(game, false);
+            }
             System.out.println("...");
         } else {
             if (game.isFinished()) {
@@ -316,9 +325,6 @@ public class GameServiceImpl implements GameService {
                         questionStart(game, question);
                     } else {
                         String message = question.getCurrentChunk();
-                        if (question.isFirstChunk()) {
-                            prepareForAnswer(game, question);
-                        }
                         sentQuestionChunk(game, question, message);
                         endQuestion(game, theme, question);
                     }
@@ -358,6 +364,9 @@ public class GameServiceImpl implements GameService {
 
     private void sentQuestionChunk(GameDTO g, GameDTO.Theme.Question question, String message) {
         messagingTemplate.convertAndSend("/game/" + g.getId() + "/question", message);
+        if (question.isFirstChunk()) {
+            prepareForAnswer(g, question);
+        }
         question.incrementLastIndex();
     }
 
