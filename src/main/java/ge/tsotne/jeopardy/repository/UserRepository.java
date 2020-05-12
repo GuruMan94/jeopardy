@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUserName(@NotNull String userName);
 
+    int countByUserName(@NotNull String userName);
+
     @Query("SELECT u.userName FROM User u WHERE u.id=:id")
     Optional<UserNameOnly> getUserNameById(long id);
 }

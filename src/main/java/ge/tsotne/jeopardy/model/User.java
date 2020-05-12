@@ -1,9 +1,11 @@
 package ge.tsotne.jeopardy.model;
 
+import ge.tsotne.jeopardy.model.dto.UserDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.envers.Audited;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -28,8 +30,7 @@ public class User extends AuditedEntity {
     @Column(name = "PASSWORD", nullable = false)
     private String password;
 
-    @NotNull
-    @Column(name = "EMAIL", nullable = false)
+    @Column(name = "EMAIL")
     private String email;
 
     @Column(name = "FIRST_NAME")
@@ -42,5 +43,13 @@ public class User extends AuditedEntity {
         this.userName = userName;
         this.password = password;
         this.email = email;
+    }
+
+    public User(UserDTO dto, PasswordEncoder passwordEncoder) {
+        this.userName = dto.getUserName();
+        this.password = passwordEncoder.encode(dto.getPassword());
+        this.email = dto.getEmail();
+        this.firstName = dto.getFirstName();
+        this.lastName = dto.getLastName();
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
-    private UserPrincipalDetailsService userPrincipalDetailsService;
+    private final UserPrincipalDetailsService userPrincipalDetailsService;
 
     public SecurityConfiguration(UserPrincipalDetailsService userPrincipalDetailsService) {
         this.userPrincipalDetailsService = userPrincipalDetailsService;
