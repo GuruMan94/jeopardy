@@ -10,14 +10,18 @@ public class Utils {
 
     public static Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof UserPrincipal)) return null;
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal)) {
+            return null;
+        }
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         return principal.getId();
     }
 
     public static long getCurrentUserIdNotNull() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof UserPrincipal)) throw new RuntimeException("USER_NOT_FOUND");
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal)) {
+            throw new RuntimeException("USER_NOT_FOUND");
+        }
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         return principal.getId();
     }
@@ -25,7 +29,9 @@ public class Utils {
     @NotNull
     public static UserPrincipal getCurrentUserNotNull() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof UserPrincipal)) throw new RuntimeException("USER_NOT_FOUND");
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal)) {
+            throw new RuntimeException("USER_NOT_FOUND");
+        }
         return (UserPrincipal) auth.getPrincipal();
     }
 }

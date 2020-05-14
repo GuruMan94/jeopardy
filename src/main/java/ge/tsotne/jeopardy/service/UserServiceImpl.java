@@ -4,6 +4,10 @@ import ge.tsotne.jeopardy.model.User;
 import ge.tsotne.jeopardy.model.dto.UserDTO;
 import ge.tsotne.jeopardy.model.projection.UserNameOnly;
 import ge.tsotne.jeopardy.repository.UserRepository;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +18,14 @@ import javax.validation.constraints.NotNull;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationProvider authenticationProvider;
 
     public UserServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           AuthenticationProvider authenticationProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authenticationProvider = authenticationProvider;
     }
 
     @Override
@@ -40,5 +47,15 @@ public class UserServiceImpl implements UserService {
         }
         User user = new User(dto, passwordEncoder);
         return userRepository.save(user);
+    }
+
+    @Override
+    public void login(UserDTO dto) {
+        Authentication auth = authenticationProvider.authenticate(
+                new UsernamePasswordAuthenticationToken(dto.getUserName(), dto.getPassword())
+        );
+        if (auth.isAuthenticated()) {
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
     }
 }

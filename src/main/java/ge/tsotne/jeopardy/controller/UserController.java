@@ -21,6 +21,12 @@ public class UserController {
         return ResponseEntity.ok(userService.register(dto));
     }
 
+    @PostMapping("/user/login")
+    public ResponseEntity<User> login(@RequestBody @Valid UserDTO dto) {
+        userService.login(dto);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/user/check")
     public ResponseEntity<Boolean> exists(@RequestParam String userName) {
         return ResponseEntity.ok(userService.exists(userName));

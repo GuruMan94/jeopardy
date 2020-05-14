@@ -9,5 +9,7 @@ public interface UserService {
 
     User register(UserDTO dto);
 
+    void login(UserDTO dto);
+
     boolean exists(String userName);
 }
