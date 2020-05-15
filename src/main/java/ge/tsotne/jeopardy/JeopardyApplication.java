@@ -24,7 +24,9 @@ public class JeopardyApplication {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins("http://localhost:4200")
-                        .allowedHeaders("*");
+                        .allowedMethods("*")
+                        .allowCredentials(true)
+                        .exposedHeaders("Access-Control-Expose-Headers");
             }
         };
     }

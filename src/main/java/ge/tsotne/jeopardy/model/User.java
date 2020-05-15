@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
 @Audited
 @EqualsAndHashCode(callSuper = true)
@@ -17,7 +18,7 @@ import javax.validation.constraints.NotNull;
 @SequenceGenerator(name = "SEQ_USER", sequenceName = "SEQ_USER", allocationSize = 1)
 @Data
 @NoArgsConstructor
-public class User extends AuditedEntity {
+public class User extends AuditedEntity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_USER")
     private Long id;
