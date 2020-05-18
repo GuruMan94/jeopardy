@@ -58,4 +58,9 @@ public class UserServiceImpl implements UserService {
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
     }
+
+    @Override
+    public void logout() {
+        SecurityContextHolder.clearContext();
+    }
 }

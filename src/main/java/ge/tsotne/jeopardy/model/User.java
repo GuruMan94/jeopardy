@@ -1,5 +1,6 @@
 package ge.tsotne.jeopardy.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ge.tsotne.jeopardy.model.dto.UserDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,6 +28,7 @@ public class User extends AuditedEntity implements Serializable {
     @Column(name = "USER_NAME", unique = true, nullable = false)
     private String userName;
 
+    @JsonIgnore
     @NotNull
     @Column(name = "PASSWORD", nullable = false)
     private String password;

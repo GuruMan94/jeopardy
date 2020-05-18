@@ -12,4 +12,6 @@ public interface UserService {
     void login(UserDTO dto);
 
     boolean exists(String userName);
+
+    void logout();
 }

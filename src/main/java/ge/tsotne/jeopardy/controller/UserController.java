@@ -22,8 +22,14 @@ public class UserController {
     }
 
     @PostMapping("/user/login")
-    public ResponseEntity<User> login(@RequestBody @Valid UserDTO dto) {
+    public ResponseEntity<Void> login(@RequestBody @Valid UserDTO dto) {
         userService.login(dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/user/logout")
+    public ResponseEntity<Void> logout() {
+        userService.logout();
         return ResponseEntity.ok().build();
     }
 
